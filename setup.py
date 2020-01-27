@@ -8,6 +8,7 @@ setup(
     install_requires=[
         'Click',
         'docker',
+        'gitpython',
     ],
     entry_points='''
         [console_scripts]

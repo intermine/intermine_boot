@@ -2,11 +2,14 @@
 
 A little app to spin up local containers in which to build an InterMine
 
+## Requirements
+- Python 3
+- Docker
+- Git
+
 ## Development
 
-**Requires:**
-- [virtualenv](https://virtualenv.pypa.io/en/stable/installation/)
-- Python 3
+Install [virtualenv](https://virtualenv.pypa.io/en/stable/installation/) if you haven't already.
 
 ```bash
 $ virtualenv venv
