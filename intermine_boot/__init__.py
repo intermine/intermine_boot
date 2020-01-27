@@ -16,7 +16,11 @@ def cli(mode, target, ci, build_im, im_repo, im_branch):
 
     TARGET: [local]
     """
-    click.echo('Hello, World!')
+
+    built_versions = None
 
     if build_im:
-        build_intermine.main(im_repo=im_repo, im_branch=im_branch)
+        built_versions = build_intermine.main(im_repo=im_repo,
+                                              im_branch=im_branch)
+
+    click.echo(built_versions)

@@ -3,7 +3,7 @@
 A little app to spin up local containers in which to build an InterMine
 
 ## Requirements
-- Python 3
+- Python 3.5+
 - Docker
 - Git
 
