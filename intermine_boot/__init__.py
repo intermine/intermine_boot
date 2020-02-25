@@ -1,8 +1,8 @@
 import subprocess
 import sys
-import os
 import re
 import click
+from xdg import (XDG_DATA_HOME)
 from intermine_boot import build_intermine, docker_compose
 
 MODE_OPTIONS = ['start', 'stop', 'build', 'load', 'setup']
@@ -59,12 +59,8 @@ def cli(mode, target,
         docker_compose.main(mode, versions=built_versions, build_images=build_images)
 
     if mode == 'stop':
-        config_path = os.path.join(
-            os.path.expanduser('~'),
-            '.intermine_boot',
-            'docker-compose.yml'
-        )
+        config_path = XDG_DATA_HOME / 'intermine_boot' / 'docker-compose.yml'
 
-        if os.path.isfile(config_path):
+        if config_path.is_file():
             docker_compose.down(config_path)
-            os.remove(config_path)
+            config_path.unlink()

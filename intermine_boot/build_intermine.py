@@ -1,5 +1,5 @@
-import os
 import tempfile
+from pathlib import Path
 import subprocess
 import re
 import sys
@@ -28,10 +28,11 @@ def read_version_string(file_path):
 
 def main(im_repo, im_branch):
     with tempfile.TemporaryDirectory(prefix='intermine_boot_') as tmpdir:
+        tmpdir = Path(tmpdir)
 
         click.echo('Cloning GitHub repository for building InterMine')
 
-        im_repo_dir = os.path.join(tmpdir, 'intermine')
+        im_repo_dir = tmpdir / 'intermine'
 
         Repo.clone_from(im_repo, im_repo_dir,
                         progress=utils.GitProgressPrinter(),
@@ -52,17 +53,17 @@ def main(im_repo, im_branch):
                                check=True,
                                stdout=subprocess.PIPE,
                                stderr=subprocess.PIPE,
-                               cwd=os.path.join(im_repo_dir, *install_dir))
+                               cwd=im_repo_dir.joinpath(*install_dir))
                 im_progress.update(1)
                 subprocess.run(['./gradlew', 'install'],
                                check=True,
                                stdout=subprocess.PIPE,
                                stderr=subprocess.PIPE,
-                               cwd=os.path.join(im_repo_dir, *install_dir))
+                               cwd=im_repo_dir.joinpath(*install_dir))
                 im_progress.update(1)
 
-        im_build_file = os.path.join(im_repo_dir, *IM_VERSION_PATH)
-        bio_build_file = os.path.join(im_repo_dir, *BIO_VERSION_PATH)
+        im_build_file = im_repo_dir.joinpath(*IM_VERSION_PATH)
+        bio_build_file = im_repo_dir.joinpath(*BIO_VERSION_PATH)
 
         return {
             'im_version': read_version_string(im_build_file),
