@@ -2,6 +2,7 @@ from pathlib import Path
 import tempfile
 import subprocess
 import shutil
+import os
 import click
 from git import Repo
 from xdg import (XDG_DATA_HOME)
@@ -9,9 +10,11 @@ from intermine_boot import utils
 
 DOCKER_COMPOSE_REPO = 'https://github.com/intermine/docker-intermine-gradle'
 
+ENV_VARS = ['env', 'UID='+str(os.geteuid()), 'GID='+str(os.getegid())]
 
 def up(compose_path, build=False):
-    subprocess.run(['docker-compose',
+    subprocess.run([*ENV_VARS,
+                    'docker-compose',
                     '-f', compose_path.name,
                     'up', '-d'] +
                    (['--build', '--force-recreate'] if build else []),
@@ -20,7 +23,8 @@ def up(compose_path, build=False):
 
 
 def down(compose_path):
-    subprocess.run(['docker-compose',
+    subprocess.run([*ENV_VARS,
+                    'docker-compose',
                     '-f', compose_path.name,
                     'down'],
                    check=True,
