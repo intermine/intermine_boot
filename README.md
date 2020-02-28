@@ -21,3 +21,10 @@ $ intermine_boot
 # Exit virtualenv when done.
 $ deactivate
 ```
+
+## TODO
+
+- The amount of conditionals is making it very difficult to determine the codepath of each mode. We should decompose the code into smaller functions describing what they do, then define code paths clearly by calling these. It will be less DRY, but hopefully much more readable.
+- Pass the CLI switches around as a (preferrably immutable) dict instead of each argument separately.
+- Find a way to merge the two different `docker-compose.yaml` files. If this really isn't practical to do, we need to persist which compose file is used, so it later can be targetted for `stop` mode.
+- Update intermine_builder to handle an already built mine (ie. just deploy to tomcat)

@@ -5,7 +5,7 @@ import click
 from xdg import (XDG_DATA_HOME)
 from intermine_boot import build_intermine, docker_compose
 
-MODE_OPTIONS = ['start', 'stop', 'build', 'load', 'setup']
+MODE_OPTIONS = ['start', 'stop', 'build', 'load', 'clean']
 TARGET_OPTIONS = ['local']
 
 
@@ -19,9 +19,10 @@ TARGET_OPTIONS = ['local']
 @click.option('--im-version', help='Use a specific version of InterMine. Has no effect when used with `--build-im`, in which case the built version will be used.')
 @click.option('--bio-version', help='Use a specific version of InterMine\'s bio packages. Has no effect when used with `--build-im`, in which case the built version will be used.')
 @click.option('--build-images', is_flag=True, default=False, help='Build Docker images locally instead of using prebuilt images from Docker Hub.')
+@click.option('--rebuild', is_flag=True, default=False, help='Rebuild your mine from scratch even if it already exists.')
 def cli(mode, target,
         ci, build_im, im_repo, im_branch, im_version, bio_version,
-        build_images):
+        build_images, rebuild):
     """Here will be a description of this script.
     Remember to also document modes and targets.
     """
@@ -56,7 +57,7 @@ def cli(mode, target,
         built_versions = build_intermine.main(im_repo=im_repo,
                                               im_branch=im_branch)
     if mode in ['start', 'build', 'load']:
-        docker_compose.main(mode, versions=built_versions, build_images=build_images)
+        docker_compose.main(mode, versions=built_versions, build_images=build_images, rebuild=rebuild)
 
     if mode == 'stop':
         config_path = XDG_DATA_HOME / 'intermine_boot' / 'docker-compose.yml'
