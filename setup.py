@@ -8,7 +8,8 @@ setup(
     install_requires=[
         'Click',
         'gitpython',
-        'xdg'
+        'xdg',
+        'pyyaml'
     ],
     entry_points='''
         [console_scripts]

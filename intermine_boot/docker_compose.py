@@ -4,6 +4,7 @@ import subprocess
 import shutil
 import os
 import click
+import yaml
 from git import Repo
 from xdg import (XDG_DATA_HOME)
 from intermine_boot import utils
@@ -31,6 +32,19 @@ def down(compose_path):
                    cwd=compose_path.parent)
 
 
+def create_volume_dirs(compose_path):
+    with open(compose_path, 'r') as stream:
+        compose_dict = yaml.safe_load(stream)
+        for service in compose_dict['services']:
+            service_dict = compose_dict['services'][service]
+            if 'volumes' not in service_dict:
+                continue
+            volumes = service_dict['volumes']
+            for volume in volumes:
+                volume_dir = volume.split(':')[0]
+                Path(compose_path.parent / volume_dir).mkdir(parents=True, exist_ok=True)
+
+
 def main(mode, versions, build_images):
     with tempfile.TemporaryDirectory(prefix='intermine_boot_') as tmpdir:
         tmpdir = Path(tmpdir)
@@ -45,6 +59,8 @@ def main(mode, versions, build_images):
             compose_config = 'local.docker-compose.yml'
 
         config_path = work_dir / compose_config
+
+        create_volume_dirs(config_path)
 
         up(config_path, build=build_images)
 
