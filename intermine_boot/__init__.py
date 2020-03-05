@@ -3,7 +3,7 @@ import sys
 import re
 import click
 from xdg import (XDG_DATA_HOME)
-from intermine_boot import build_intermine, docker_compose
+from intermine_boot import intermine, docker
 
 MODE_OPTIONS = ['start', 'stop', 'build', 'load', 'clean']
 TARGET_OPTIONS = ['local']
@@ -20,9 +20,7 @@ TARGET_OPTIONS = ['local']
 @click.option('--bio-version', help='Use a specific version of InterMine\'s bio packages. Has no effect when used with `--build-im`, in which case the built version will be used.')
 @click.option('--build-images', is_flag=True, default=False, help='Build Docker images locally instead of using prebuilt images from Docker Hub.')
 @click.option('--rebuild', is_flag=True, default=False, help='Rebuild your mine from scratch even if it already exists.')
-def cli(mode, target,
-        ci, build_im, im_repo, im_branch, im_version, bio_version,
-        build_images, rebuild):
+def cli(**options):
     """Here will be a description of this script.
     Remember to also document modes and targets.
     """
@@ -49,19 +47,18 @@ def cli(mode, target,
             sys.exit(docker_info.returncode)
 
     built_versions = {
-        'im_version': im_version,
-        'bio_version': bio_version
+        'im_version': options['im_version'],
+        'bio_version': options['bio_version']
     }
 
-    if build_im:
-        built_versions = build_intermine.main(im_repo=im_repo,
-                                              im_branch=im_branch)
-    if mode in ['start', 'build', 'load']:
-        docker_compose.main(mode, versions=built_versions, build_images=build_images, rebuild=rebuild)
+    if options['build_im']:
+        built_versions = intermine.main(**options)
+    if options['mode'] in ['start', 'build', 'load']:
+        docker.main(**options)
 
-    if mode == 'stop':
+    if options['mode'] == 'stop':
         config_path = XDG_DATA_HOME / 'intermine_boot' / 'docker-compose.yml'
 
         if config_path.is_file():
-            docker_compose.down(config_path)
+            docker.down(config_path)
             config_path.unlink()

@@ -49,11 +49,11 @@ def create_volume_dirs(compose_path):
                 Path(compose_path.parent / volume_dir).mkdir(parents=True, exist_ok=True)
 
 
-def main(mode, versions, build_images, rebuild):
+def main(**options):
     data_dir = XDG_DATA_HOME / 'intermine_boot'
     work_dir = data_dir / 'docker'
     compose_config = 'dockerhub.docker-compose.yml'
-    if build_images:
+    if options['build_images']:
         compose_config = 'local.docker-compose.yml'
     config_path = work_dir / compose_config
 
@@ -67,14 +67,14 @@ def main(mode, versions, build_images, rebuild):
                         progress=utils.GitProgressPrinter())
         create_volume_dirs(config_path)
     else:
-        if rebuild:
+        if options['rebuild']:
             shutil.rmtree(work_dir)
 
             Repo.clone_from(DOCKER_COMPOSE_REPO, work_dir,
                             progress=utils.GitProgressPrinter())
             create_volume_dirs(config_path)
 
-    up(config_path, build=build_images)
+    up(config_path, build=options['build_images'])
 
     if fresh_build:
         # This command will print the logs from intermine_builder and exit
@@ -85,7 +85,7 @@ def main(mode, versions, build_images, rebuild):
                        check=True,
                        cwd=work_dir)
 
-    if mode == 'build':
+    if options['mode'] == 'build':
         down(config_path)
 
         postgres_archive = data_dir / 'postgres'

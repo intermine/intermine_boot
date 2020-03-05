@@ -26,7 +26,7 @@ def read_version_string(file_path):
     sys.exit(1)
 
 
-def main(im_repo, im_branch):
+def main(**options):
     with tempfile.TemporaryDirectory(prefix='intermine_boot_') as tmpdir:
         tmpdir = Path(tmpdir)
 
@@ -34,12 +34,12 @@ def main(im_repo, im_branch):
 
         im_repo_dir = tmpdir / 'intermine'
 
-        Repo.clone_from(im_repo, im_repo_dir,
+        Repo.clone_from(options['im_repo'], im_repo_dir,
                         progress=utils.GitProgressPrinter(),
                         multi_options=['--single-branch',
-                                       '--branch ' + im_branch])
+                                       '--branch ' + options['im_branch']])
 
-        click.echo('Will build ' + im_branch + ' branch of ' + im_repo)
+        click.echo('Will build ' + options['im_branch'] + ' branch of ' + options['im_repo'])
 
         with click.progressbar(length=len(IM_INSTALL_DIRS)*2,
                                show_eta=False,
