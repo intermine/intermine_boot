@@ -3,7 +3,7 @@ import sys
 import re
 import click
 from xdg import (XDG_DATA_HOME)
-from intermine_boot import intermine, docker
+from intermine_boot import intermine, docker, commands
 
 MODE_OPTIONS = ['start', 'stop', 'build', 'load', 'clean']
 TARGET_OPTIONS = ['local']
@@ -25,40 +25,19 @@ def cli(**options):
     Remember to also document modes and targets.
     """
 
-    docker_info = subprocess.run(['docker', 'info'],
-                                 stdout=subprocess.PIPE,
-                                 stderr=subprocess.PIPE)
-    if docker_info.returncode != 0:
-        out = docker_info.stdout.decode('utf-8')
-
-        permission_denied = re.search(r'permission denied', out, re.IGNORECASE)
-        cannot_connect = re.search(r'cannot connect', out, re.IGNORECASE)
-
-        if permission_denied:
-            click.echo('You do not have permission to access the docker daemon.', err=True)
-            click.echo('Please run `sudo groupadd docker` followed by `sudo usermod -aG docker $USER`, then log out and log back in. See https://docs.docker.com/install/linux/linux-postinstall/ for more information.')
-            sys.exit(1)
-        elif cannot_connect:
-            click.echo('You don\'t seem to have a running docker daemon.', err=True)
-            click.echo('See https://docs.docker.com/install/ for instructions on installing the Docker Engine. If you\'re using a Linux distro, you can install docker with your package manager.')
-            sys.exit(1)
-        else:
-            click.echo(out, err=True)
-            sys.exit(docker_info.returncode)
-
     built_versions = {
         'im_version': options['im_version'],
         'bio_version': options['bio_version']
     }
 
+    data_dir = XDG_DATA_HOME / 'intermine_boot'
+    if not data_dir.is_dir():
+        data_dir.mkdir()
+    env = {
+        'data_dir': data_dir
+    }
+
     if options['build_im']:
         built_versions = intermine.main(**options)
-    if options['mode'] in ['start', 'build', 'load']:
-        docker.main(**options)
 
-    if options['mode'] == 'stop':
-        config_path = XDG_DATA_HOME / 'intermine_boot' / 'docker-compose.yml'
-
-        if config_path.is_file():
-            docker.down(config_path)
-            config_path.unlink()
+    commands.invoke(options['mode'], options, env)

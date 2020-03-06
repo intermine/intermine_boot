@@ -24,7 +24,6 @@ $ deactivate
 
 ## TODO
 
-- The amount of conditionals is making it very difficult to determine the codepath of each mode. We should decompose the code into smaller functions describing what they do, then define code paths clearly by calling these. It will be less DRY, but hopefully much more readable.
 - Find a way to merge the two different `docker-compose.yaml` files. If this really isn't practical to do, we need to persist which compose file is used, so it later can be targetted for `stop` mode.
 - Update intermine_builder to handle an already built mine (ie. just deploy to tomcat)
     - Also make it handle building InterMine
