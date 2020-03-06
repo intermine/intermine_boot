@@ -85,3 +85,7 @@ def create_archives(options, env):
     solr_archive = env['data_dir'] / 'solr'
     solr_data_dir = compose_path.parent / 'data' / 'solr'
     shutil.make_archive(solr_archive, 'xztar', root_dir=solr_data_dir)
+
+    mine_archive = env['data_dir'] / 'biotestmine'
+    mine_data_dir = compose_path.parent / 'data' / 'mine' / 'biotestmine'
+    shutil.make_archive(mine_archive, 'xztar', root_dir=mine_data_dir)
