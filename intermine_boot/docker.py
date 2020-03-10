@@ -44,12 +44,16 @@ def up(options, env):
 
     _create_volume_dirs(compose_path)
 
-    subprocess.run([*ENV_VARS,
+    option_vars = (['IM_REPO_URL='+options['im_repo'],
+                    'IM_REPO_BRANCH='+options['im_branch']]
+                   if options['build_im'] else [])
+
+    subprocess.run([*ENV_VARS, *option_vars,
                     'docker-compose',
                     '-f', compose_path.name,
                     'up', '-d'] +
                    (['--build', '--force-recreate']
-                       if options['build_images'] else []),
+                    if options['build_images'] else []),
                    check=True,
                    cwd=compose_path.parent)
 

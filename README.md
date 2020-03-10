@@ -25,5 +25,6 @@ $ deactivate
 ## TODO
 
 - Find a way to merge the two different `docker-compose.yaml` files. If this really isn't practical to do, we need to persist which compose file is used, so it later can be targetted for `stop` mode.
+- Convert usage of docker-compose to using docker python library directly
 - Update intermine_builder to handle an already built mine (ie. just deploy to tomcat)
-    - Also make it handle building InterMine
+- Create archive for InterMine as well (when a custom one has been built)

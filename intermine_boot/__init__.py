@@ -3,7 +3,7 @@ import sys
 import re
 import click
 from xdg import (XDG_DATA_HOME)
-from intermine_boot import intermine, docker, commands
+from intermine_boot import docker, commands
 
 MODE_OPTIONS = ['start', 'stop', 'build', 'load', 'clean']
 TARGET_OPTIONS = ['local']
@@ -25,19 +25,11 @@ def cli(**options):
     Remember to also document modes and targets.
     """
 
-    built_versions = {
-        'im_version': options['im_version'],
-        'bio_version': options['bio_version']
-    }
-
     data_dir = XDG_DATA_HOME / 'intermine_boot'
     if not data_dir.is_dir():
         data_dir.mkdir()
     env = {
         'data_dir': data_dir
     }
-
-    if options['build_im']:
-        built_versions = intermine.main(**options)
 
     commands.invoke(options['mode'], options, env)

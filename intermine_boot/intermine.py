@@ -1,3 +1,9 @@
+"""
+This file is not currently in use, as the building of InterMine has been moved
+into the intermine:builder docker container.
+https://github.com/intermine/docker-intermine-gradle
+If this changes, update this docstring.
+"""
 import tempfile
 from pathlib import Path
 import subprocess
