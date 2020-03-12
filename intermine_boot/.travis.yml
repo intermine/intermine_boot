@@ -1,0 +1,13 @@
+dist: xenial   #Use light Xenial distro
+group: edge  
+matrix:        #Will consist of entire project's commands segment wise
+    - language: python
+      python:
+      - "3.5"
+      - "3.6"
+      - "3.7"
+      - "3.8"
+      install:
+        - pip install --editable .
+      script:
+        - intermine_boot --test
