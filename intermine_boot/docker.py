@@ -6,7 +6,7 @@ from git import Repo
 import yaml
 from intermine_boot import utils
 
-DOCKER_COMPOSE_REPO = 'https://github.com/uosl/docker-intermine-gradle'
+DOCKER_COMPOSE_REPO = 'https://github.com/intermine/docker-intermine-gradle'
 
 ENV_VARS = ['env', 'UID='+str(os.geteuid()), 'GID='+str(os.getegid())]
 
