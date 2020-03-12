@@ -32,6 +32,8 @@ def start(options, env):
     assert_docker(options, env)
     docker.up(options, env)
     docker.monitor_builder(options, env)
+    click.echo('Build completed. Visit http://localhost:9999/biotestmine to access your mine.')
+    # TODO: Once we support building mines other than biotestmine, we should make this text dynamic.
 
 def stop(options, env):
     assert_docker(options, env)
