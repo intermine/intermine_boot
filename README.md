@@ -13,7 +13,7 @@ A little app to spin up local containers in which to build an InterMine
 Install [virtualenv](https://virtualenv.pypa.io/en/stable/installation/) if you haven't already.
 
 ```bash
-$ virtualenv venv
+$ virtualenv -p python3 venv
 $ . venv/bin/activate
 $ pip install --editable .
 # Change the source code and call intermine_boot however you want.
