@@ -10,6 +10,16 @@ Building and running an InterMine is an arduous process which requires Linux sys
 
 This tool is one part of InterMine Cloud, focused on providing its features in a local environment.
 
+## Installation
+
+The package is available on PyPI and can be installed with PIP.
+
+```
+pip install intermine-boot
+```
+
+Make sure the [Requirements](README.md#requirements) are installed as well.
+
 ## Features
 
 *Note: This tool is under development and the listed features are only the ones currently implemented (more are planned!).*
