@@ -18,4 +18,4 @@ services:
   - docker
 
 script:
-  - python3 /test/test.py
+  - python3 /test/test1.py
