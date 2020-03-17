@@ -3,7 +3,7 @@ import os
 import time
 import sys
 
-Timeout = 900
+Timeout = 540
 
 def linux_test():
 	local_start_out = subprocess.Popen(["intermine_boot", "start", "local"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
