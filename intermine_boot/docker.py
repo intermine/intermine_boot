@@ -48,6 +48,15 @@ def up(options, env):
                     'IM_REPO_BRANCH='+options['im_branch']]
                    if options['build_im'] else [])
 
+    if not options['build_images']:
+        # Make sure dockerhub images are up-to-date.
+        subprocess.run(['docker-compose',
+                        '-f', compose_path.name,
+                        'pull'],
+                       check=True,
+                       cwd=compose_path.parent)
+
+
     subprocess.run([*ENV_VARS, *option_vars,
                     'docker-compose',
                     '-f', compose_path.name,
