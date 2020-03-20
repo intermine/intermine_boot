@@ -7,6 +7,10 @@ matrix:        #Will consist of entire project's commands segment wise
       - "3.6"
       - "3.7"
       - "3.8"
+      os:
+      - linux
+      - windows
+      - osx
       install:
         - pip install --editable .
       script:
