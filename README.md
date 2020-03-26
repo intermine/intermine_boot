@@ -28,7 +28,7 @@ Make sure the [Requirements](README.md#requirements) are installed as well.
 - Use a custom build of InterMine with flags `--build-im`, `--im-repo` and `--im-branch`
 
 ## Requirements
-- Python 3.5+
+- Python 3.6+
 - Git
 - docker
 - [docker-compose](https://docs.docker.com/compose/install/)
