@@ -1,5 +1,7 @@
-The table below draws the comparison between the different compression formats namely [ 'tar', 'bztar', 'gztar', 'xztar', 'zip'] for the files ['biotestmine', 'postgress', 'solr'] on the basis time taken to compress and the size after compression. 
-The timing function used to calculate the time taken by each of the compression formats was from a Python defined module, “time” which allows us to handle various operations regarding time, its conversions and representations. The start and end of the compression process were marked and the difference was reported as the time taken for the same. 
+The table below draws the comparison between the different compression formats namely [ 'tar', 'bztar', 'gztar', 'xztar', 'zip'] for the files ['biotestmine', 'postgress', 'solr'] on the basis time taken to compress and the size after compression.
+
+The timing function used to calculate the time taken by each of the compression formats was from a Python defined module, “time” which allows us to handle various operations regarding time, its conversions and representations. The start and end of the compression process were marked and the difference was reported as the time taken for the same.
+
 The values presented in the table are subject to changes depending on the CPU model of the machine being used to carry out this process. This study was conducted on a machine equipped with I7 7700hq. More details are given at the bottom of the table.
 
 
