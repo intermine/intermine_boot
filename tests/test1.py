@@ -14,8 +14,10 @@ def linux_test():
 		time.sleep(1)
 		end = time.time()
 		curl_out = subprocess.run(["curl", "http://localhost:9999/biotestmine/service/version"], shell=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
+		
 		if(curl_out.stdout!=''):
 			break
+		
 		if((end-start)>Timeout):
 			local_start_out.kill()
 			subprocess.run(["intermine_boot","stop","local"])
