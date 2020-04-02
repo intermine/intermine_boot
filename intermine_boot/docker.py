@@ -5,6 +5,17 @@ import os
 from git import Repo
 import yaml
 from intermine_boot import utils
+import boto3
+import s3
+
+
+#AWS Bucket details:
+
+s3_bucket_name = ''
+aws_access_key_id = ''
+aws_secret_key_id = ''
+
+
 
 DOCKER_COMPOSE_REPO = 'https://github.com/intermine/docker-intermine-gradle'
 

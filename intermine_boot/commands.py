@@ -45,7 +45,8 @@ def build(options, env):
     docker.monitor_builder(options, env)
     docker.down(options, env)
     docker.create_archives(options, env)
-
+    docker.upload(options, env)
+    
 def _not_implemented(options, env):
     click.echo('This mode has not been implemented yet.')
     sys.exit(1)
