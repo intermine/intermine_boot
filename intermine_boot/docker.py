@@ -9,15 +9,15 @@ import boto3
 import s3
 
 
+
+DOCKER_COMPOSE_REPO = 'https://github.com/intermine/docker-intermine-gradle'
+
 #AWS Bucket details:
 
 s3_bucket_name = ''
 aws_access_key_id = ''
 aws_secret_key_id = ''
 
-
-
-DOCKER_COMPOSE_REPO = 'https://github.com/intermine/docker-intermine-gradle'
 
 ENV_VARS = ['env', 'UID='+str(os.geteuid()), 'GID='+str(os.getegid())]
 

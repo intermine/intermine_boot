@@ -1,5 +1,4 @@
 import boto3
-#from botocore.exceptions import ClientError
 
 def upload(options, env):
     postgres_file = _get_compose_path(options, env).parent / 'data' /'postgres' / env['data_dir'] / 'postgres.tar.xz'
