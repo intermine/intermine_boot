@@ -10,6 +10,32 @@ DOCKER_COMPOSE_REPO = 'https://github.com/intermine/docker-intermine-gradle'
 
 ENV_VARS = ['env', 'UID='+str(os.geteuid()), 'GID='+str(os.getegid())]
 
+
+def _is_conf_same(path_to_config, options):
+    if not os.path.isfile(str(path_to_config) + '.config'):
+        return False
+    
+    config = pkl.load(open(str(path_to_config) + '.config', 'rb'))
+    try:
+        if (config['branch_name'] == options['im_branch']) and (
+                config['repo_name'] == options['im_repo']):
+            return True
+        else:
+            return False
+    except KeyError:
+        return False
+
+
+def _store_conf(path_to_config, options):
+    config = {}
+    config['branch_name'] = options['im_branch']
+    config['repo_name'] = options['im_repo']
+
+    f = open(path_to_config / '.config', 'wb')
+    pkl.dump(config, f)
+    return
+
+
 def _get_compose_path(options, env):
     work_dir = env['data_dir'] / 'docker'
     compose_file = 'dockerhub.docker-compose.yml'
@@ -37,7 +63,11 @@ def up(options, env):
     compose_path = _get_compose_path(options, env)
 
     if compose_path.parent.is_dir():
-        shutil.rmtree(compose_path.parent)
+        if _is_conf_same(env['data_dir'], options):
+            print ('The repo with same configuration already exists')
+            return
+        else:
+            shutil.rmtree(compose_path.parent)
 
     Repo.clone_from(DOCKER_COMPOSE_REPO, compose_path.parent,
                     progress=utils.GitProgressPrinter())
@@ -65,6 +95,8 @@ def up(options, env):
                     if options['build_images'] else []),
                    check=True,
                    cwd=compose_path.parent)
+    
+    _store_conf(env['data_dir'], options)
 
 
 def down(options, env):
