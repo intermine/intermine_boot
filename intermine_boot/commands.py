@@ -46,6 +46,11 @@ def build(options, env):
     docker.down(options, env)
     docker.create_archives(options, env)
 
+    # upload and download of files is possible only if you have valid access keys
+    # docker.upload_archives(options, env, 's3')
+    # docker.download_archives(options, env, 's3')
+
+
 def _not_implemented(options, env):
     click.echo('This mode has not been implemented yet.')
     sys.exit(1)
