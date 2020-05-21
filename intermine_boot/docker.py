@@ -1,4 +1,5 @@
 from pathlib import Path
+import pickle as pkl
 import subprocess
 import shutil
 import os
@@ -12,10 +13,11 @@ ENV_VARS = ['env', 'UID='+str(os.geteuid()), 'GID='+str(os.getegid())]
 
 
 def _is_conf_same(path_to_config, options):
-    if not os.path.isfile(str(path_to_config) + '.config'):
+    conf_file_path = str(path_to_config) + '/.config'
+    if not os.path.isfile(conf_file_path):
         return False
     
-    config = pkl.load(open(str(path_to_config) + '.config', 'rb'))
+    config = pkl.load(open(conf_file_path, 'rb'))
     try:
         if (config['branch_name'] == options['im_branch']) and (
                 config['repo_name'] == options['im_repo']):
@@ -62,14 +64,17 @@ def _create_volume_dirs(compose_path):
 def up(options, env):
     compose_path = _get_compose_path(options, env)
 
+    same_conf_exist = False
     if compose_path.parent.is_dir():
         if _is_conf_same(env['data_dir'], options):
-            print ('The repo with same configuration already exists')
-            return
+            print ('Same configuration exist. Running local compose file...') 
+            same_conf_exist = True
         else:
+            print ('Configuration change detected. Downloading compose file...')
             shutil.rmtree(compose_path.parent)
-
-    Repo.clone_from(DOCKER_COMPOSE_REPO, compose_path.parent,
+    
+    if not same_conf_exist:
+        Repo.clone_from(DOCKER_COMPOSE_REPO, compose_path.parent, 
                     progress=utils.GitProgressPrinter())
 
     _create_volume_dirs(compose_path)
