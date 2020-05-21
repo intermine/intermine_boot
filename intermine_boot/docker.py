@@ -3,9 +3,12 @@ import pickle as pkl
 import subprocess
 import shutil
 import os
-from git import Repo
+from git import Repo,cmd
 import yaml
 from intermine_boot import utils
+import boto3
+from botocore.exceptions import ClientError
+
 
 DOCKER_COMPOSE_REPO = 'https://github.com/intermine/docker-intermine-gradle'
 
@@ -37,6 +40,14 @@ def _store_conf(path_to_config, options):
     pkl.dump(config, f)
     return
 
+#AWS credentials
+AWS_CLOUD_CREDENTIALS = {
+    's3': {
+        'S3_BUCKET_NAME': '',
+        'ACCESS_KEY': '',
+        'SECRET_KEY': ''
+    }
+}
 
 def _get_compose_path(options, env):
     work_dir = env['data_dir'] / 'docker'
@@ -139,3 +150,92 @@ def create_archives(options, env):
     mine_archive = env['data_dir'] / 'biotestmine'
     mine_data_dir = compose_path.parent / 'data' / 'mine' / 'biotestmine'
     shutil.make_archive(mine_archive, 'zip', root_dir=mine_data_dir)
+
+
+def lsremote(url):
+    remote_refs = {}
+    g = cmd.Git()
+
+    for ref in g.ls_remote(url).split('\n'):
+        hash_ref_list = ref.split('\t')
+        remote_refs[hash_ref_list[1]] = hash_ref_list[0]
+
+    return remote_refs
+
+def generate_version(options, env):
+    if options['im_repo']!="":
+        currhash = lsremote(options['im_repo'])
+        version = options['im_repo']+"--"+options['im_branch']+"--"+currhash['HEAD']
+    else:
+        version = "latest_version"
+
+    version = version.replace("https://github.com/", "")
+    version = version.replace("/",".")
+
+    return version
+
+def upload_archives(options, env, method):
+    if method == 's3':
+        upload_archives_aws(options, env)
+    else:
+        print ('Method not implemented')
+        raise (NotImplementedError)
+
+def download_archives(options, env, method):
+    if method == 's3':
+        download_archives_aws(options, env)
+    else:
+        print ('Method not implemented')
+        raise (NotImplementedError)
+
+def upload_archives_aws(options, env):
+    compose_path = _get_compose_path(options, env)
+    postgres_archive_path = compose_path.parent / 'data' / 'postgres' / env['data_dir'] / 'postgres.zip'
+    solr_archive_path = compose_path.parent / 'data' / 'solr' / env['data_dir'] / 'solr.zip'
+    mine_archive_path = compose_path.parent / 'data' / 'biotestmine' / env['data_dir'] / 'biotestmine.zip'
+
+    version = generate_version(options, env)
+
+    s3 = boto3.client(
+        's3', 
+        aws_access_key_id=AWS_CLOUD_CREDENTIALS['s3']['ACCESS_KEY'], 
+        aws_secret_access_key=AWS_CLOUD_CREDENTIALS['s3']['SECRET_KEY'])
+    bucket = AWS_CLOUD_CREDENTIALS['s3']['S3_BUCKET_NAME']
+    try:
+        s3.upload_file(str(postgres_archive_path), bucket, str(version+'postgres.zip'))
+        s3.upload_file(str(solr_archive_path), bucket, str(version+'solr.zip'))
+        s3.upload_file(str(mine_archive_path), bucket, str(version+'biotestmine.zip'))
+    except ClientError as error:
+        print(error)
+
+def download_archives_aws(options, env):
+    compose_path = _get_compose_path(options, env)
+    data_dir = compose_path.parent / 'data'
+    postgres_data_dir = compose_path.parent / 'data' / 'postgres'
+    solr_data_dir = compose_path.parent / 'data' / 'solr'
+    mine_data_dir = compose_path.parent / 'data' / 'mine'
+    version = generate_version(options, env)
+    
+    # download the archives
+    s3 = boto3.client(
+        's3', 
+        aws_access_key_id=AWS_CLOUD_CREDENTIALS['s3']['ACCESS_KEY'], 
+        aws_secret_access_key=AWS_CLOUD_CREDENTIALS['s3']['SECRET_KEY'])
+    bucket = AWS_CLOUD_CREDENTIALS['s3']['S3_BUCKET_NAME']
+
+    try:
+        s3.download_file(bucket, str(version+'postgres.zip'), str(data_dir / str('postgres.zip')))
+        s3.download_file(bucket, str(version+'solr.zip'), str(data_dir / str('solr.zip')))
+        s3.download_file(bucket, str(version+'biotestmine.zip'), str(data_dir / str('mine.zip')))
+    except ClientError as error:
+        print(error)
+
+    # unzip
+    shutil.unpack_archive(str(data_dir / str('postgres.zip')), str(postgres_data_dir), 'zip')
+    shutil.unpack_archive(str(data_dir / str('solr.zip')), str(solr_data_dir), 'zip')
+    shutil.unpack_archive(str(data_dir / str('mine.zip')), str(mine_data_dir), 'zip')
+
+    # delete the zips
+    os.remove(str(data_dir / str('postgres.zip')))
+    os.remove(str(data_dir / str('solr.zip')))
+    os.remove(str(data_dir / str('mine.zip')))
