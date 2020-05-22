@@ -11,7 +11,8 @@ setup(
         'Click',
         'gitpython',
         'xdg',
-        'pyyaml'
+        'pyyaml',
+        'boto3'
     ],
     entry_points='''
         [console_scripts]
