@@ -1,4 +1,5 @@
 from pathlib import Path
+import pickle as pkl
 import subprocess
 import shutil
 import os
@@ -12,6 +13,32 @@ from botocore.exceptions import ClientError
 DOCKER_COMPOSE_REPO = 'https://github.com/intermine/docker-intermine-gradle'
 
 ENV_VARS = ['env', 'UID='+str(os.geteuid()), 'GID='+str(os.getegid())]
+
+
+def _is_conf_same(path_to_config, options):
+    conf_file_path = str(path_to_config) + '/.config'
+    if not os.path.isfile(conf_file_path):
+        return False
+    
+    config = pkl.load(open(conf_file_path, 'rb'))
+    try:
+        if (config['branch_name'] == options['im_branch']) and (
+                config['repo_name'] == options['im_repo']):
+            return True
+        else:
+            return False
+    except KeyError:
+        return False
+
+
+def _store_conf(path_to_config, options):
+    config = {}
+    config['branch_name'] = options['im_branch']
+    config['repo_name'] = options['im_repo']
+
+    f = open(path_to_config / '.config', 'wb')
+    pkl.dump(config, f)
+    return
 
 #AWS credentials
 AWS_CLOUD_CREDENTIALS = {
@@ -48,10 +75,17 @@ def _create_volume_dirs(compose_path):
 def up(options, env):
     compose_path = _get_compose_path(options, env)
 
+    same_conf_exist = False
     if compose_path.parent.is_dir():
-        shutil.rmtree(compose_path.parent)
-
-    Repo.clone_from(DOCKER_COMPOSE_REPO, compose_path.parent,
+        if _is_conf_same(env['data_dir'], options):
+            print ('Same configuration exist. Running local compose file...') 
+            same_conf_exist = True
+        else:
+            print ('Configuration change detected. Downloading compose file...')
+            shutil.rmtree(compose_path.parent)
+    
+    if not same_conf_exist:
+        Repo.clone_from(DOCKER_COMPOSE_REPO, compose_path.parent, 
                     progress=utils.GitProgressPrinter())
 
     _create_volume_dirs(compose_path)
@@ -77,6 +111,8 @@ def up(options, env):
                     if options['build_images'] else []),
                    check=True,
                    cwd=compose_path.parent)
+    
+    _store_conf(env['data_dir'], options)
 
 
 def down(options, env):
