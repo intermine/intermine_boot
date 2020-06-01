@@ -3,6 +3,7 @@ import sys
 import re
 import click
 from intermine_boot import docker
+from intermine_boot import archive
 
 def assert_docker(options, env):
     docker_info = subprocess.run(['docker', 'info'],
@@ -47,7 +48,7 @@ def build(options, env):
     docker.create_archives(options, env)
 
     # upload and download of files is possible only if you have valid access keys
-    # docker.upload_archives(options, env, 's3')
+    archive.upload_archives(options, env, 's3')
     # docker.download_archives(options, env, 's3')
 
 
