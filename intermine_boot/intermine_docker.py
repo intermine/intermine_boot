@@ -140,3 +140,99 @@ def create_archives(options, env):
     mine_archive = env['data_dir'] / 'biotestmine'
     mine_data_dir = compose_path.parent / 'data' / 'mine' / 'biotestmine'
     shutil.make_archive(mine_archive, 'zip', root_dir=mine_data_dir)
+
+
+def create_tomcat_container(client, image):
+    envs = {
+        'MEM_OPTS': "-Xmx1g -Xms500m"
+    }
+
+    ports = {
+        8080: 9999
+    }
+
+    tomcat_container = client.containers.run(
+        image, environment=envs, ports=ports, detach=True
+        )
+    
+    return tomcat_container
+
+
+def create_solr_container(client, image):
+    envs = {
+        'MEM_OPTS': '-Xmx2g -Xms1g',
+        'MINE_NAME': 'biotestmine'
+    }
+
+    user = '1001:1001'
+
+    volumes = {
+        '/home/home/.local/share/intermine_boot/docker/data/': {
+            'bind': '/var/solr',
+            'mode': 'rw'
+        }
+    }
+
+    solr_container = client.containers.run(
+        image, environment=envs, user=user, volumes=volumes, detach=True
+        )
+
+    return solr_container
+
+
+def create_postgres_container(client, image):
+    user = '1001:1001'
+
+    volumes = {
+        '/home/home/.local/share/intermine_boot/docker/data/': {
+            'bind': '/var/lib/postgresql/data',
+            'mode': 'rw'
+        }
+    }
+
+    postgres_container = client.containers.run(
+        image, user=user, volumes=volumes, detach=True)
+
+    return postgres_container
+
+
+def create_intermine_builder_container(client, image):
+    user = '1001:1001'
+
+    environment = {
+        'MINE_NAME': 'biotestmine',
+        'MINE_REPO_URL': '',
+        'IM_DATA_DIR': '/home/home/.local/share/intermine_boot/',
+        'MEM_OPTS': '-Xmx2g -Xms1g',
+        'IM_REPO_URL': '',
+        'IM_REPO_BRANCH': ''
+    }
+
+    volumes = {
+        '/home/home/.local/share/intermine_boot/docker/mine/dump': {
+            'bind': '/home/intermine/intermine/dump',
+            'mode': 'rw'
+        },
+
+        '/home/home/.local/share/intermine_boot/docker/mine/configs/': {
+            'bind': '/home/intermine/intermine/configs',
+            'mode': 'rw'
+        },
+        '/home/home/.local/share/intermine_boot/docker/mine/packages': {
+            'bind': '/home/intermine/.m2',
+            'mode': 'rw'
+        },
+        '/home/home/.local/share/intermine_boot/docker/mine/intermine': {
+            'bind': '/home/intermine/.intermine',
+            'mode': 'rw'
+        },
+        '/home/home/.local/share/intermine_boot/docker/mine/biotestmine': {
+            'bind': '/home/intermine/intermine/biotestmine',
+            'mode': 'rw'
+        }
+    }
+
+    intermine_builder_container = client.containers.run(
+        image, user=user, environment=environment, volumes=volumes, detach=True)
+
+    return intermine_builder_container
