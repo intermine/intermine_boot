@@ -2,7 +2,7 @@ import subprocess
 import sys
 import re
 import click
-from intermine_boot import docker
+from intermine_boot import intermine_docker
 from intermine_boot import archive
 
 def assert_docker(options, env):
@@ -31,21 +31,21 @@ def assert_docker(options, env):
 
 def start(options, env):
     assert_docker(options, env)
-    docker.up(options, env)
-    docker.monitor_builder(options, env)
+    intermine_docker.up(options, env)
+    intermine_docker.monitor_builder(options, env)
     click.echo('Build completed. Visit http://localhost:9999/biotestmine to access your mine.')
     # TODO: Once we support building mines other than biotestmine, we should make this text dynamic.
 
 def stop(options, env):
     assert_docker(options, env)
-    docker.down(options, env)
+    intermine_docker.down(options, env)
 
 def build(options, env):
     assert_docker(options, env)
-    docker.up(options, env)
-    docker.monitor_builder(options, env)
-    docker.down(options, env)
-    docker.create_archives(options, env)
+    intermine_docker.up(options, env)
+    intermine_docker.monitor_builder(options, env)
+    intermine_docker.down(options, env)
+    intermine_docker.create_archives(options, env)
 
     # upload and download of files is possible only if you have valid access keys
     archive.upload_archives(options, env, 's3')
