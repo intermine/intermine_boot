@@ -12,6 +12,8 @@ DOCKER_COMPOSE_REPO = 'https://github.com/intermine/docker-intermine-gradle'
 
 ENV_VARS = ['env', 'UID='+str(os.geteuid()), 'GID='+str(os.getegid())]
 
+def _get_docker_user():
+    return str(os.getuid()) + ':' + str(os.getgid())
 
 def _is_conf_same(path_to_config, options):
     conf_file_path = str(path_to_config) + '/.config'
@@ -143,8 +145,11 @@ def create_archives(options, env):
 
 
 def create_tomcat_container(client, image):
+    MEM_OPTS = os.environ.get('MEM_OPTS')
+    if MEM_OPTS is None:
+        MEM_OPTS = "-Xmx1g -Xms500m"
     envs = {
-        'MEM_OPTS': "-Xmx1g -Xms500m"
+        'MEM_OPTS': MEM_OPTS
     }
 
     ports = {
@@ -158,16 +163,25 @@ def create_tomcat_container(client, image):
     return tomcat_container
 
 
-def create_solr_container(client, image):
+def create_solr_container(client, image, env):
+    MEM_OPTS = os.environ.get('MEM_OPTS')
+    if MEM_OPTS is None:
+        MEM_OPTS = "-Xmx2g -Xms1g"
+
+    MINE_NAME = os.environ.get('MINE_NAME')
+    if MINE_NAME is None:
+        MINE_NAME = 'biotestmine'
+
     envs = {
-        'MEM_OPTS': '-Xmx2g -Xms1g',
-        'MINE_NAME': 'biotestmine'
+        'MEM_OPTS': MEM_OPTS,
+        'MINE_NAME': MINE_NAME
     }
 
-    user = '1001:1001'
+    user = _get_docker_user()
 
+    data_dir = env['data_dir'] / 'docker' / 'data'
     volumes = {
-        '/home/home/.local/share/intermine_boot/docker/data/': {
+        data_dir: {
             'bind': '/var/solr',
             'mode': 'rw'
         }
@@ -180,11 +194,11 @@ def create_solr_container(client, image):
     return solr_container
 
 
-def create_postgres_container(client, image):
-    user = '1001:1001'
-
+def create_postgres_container(client, image, env):
+    user = _get_docker_user()
+    data_dir = env['data_dir'] / 'docker' / 'data'
     volumes = {
-        '/home/home/.local/share/intermine_boot/docker/data/': {
+        data_dir : {
             'bind': '/var/lib/postgresql/data',
             'mode': 'rw'
         }
@@ -196,37 +210,59 @@ def create_postgres_container(client, image):
     return postgres_container
 
 
-def create_intermine_builder_container(client, image):
-    user = '1001:1001'
+def create_intermine_builder_container(client, image, env):
+    user = _get_docker_user()
+
+    data_dir = env['data_dir'] / 'docker' / 'data'
+
+    MINE_NAME = os.environ.get('MINE_NAME')
+    if MINE_NAME is None:
+        MINE_NAME = 'biotestmine'
+
+    MINE_REPO_URL = os.environ.get('MINE_REPO_URL')
+    if MINE_REPO_URL is None:
+        MINE_REPO_URL = ''
+
+    MEM_OPTS = os.environ.get('MEM_OPTS')
+    if MEM_OPTS is None:
+        MEM_OPTS = '-Xmx2g -Xms1g'
+    
+    IM_REPO_URL = os.environ.get('IM_REPO_URL')
+    if IM_REPO_URL is None:
+        IM_REPO_URL = ''
+
+    IM_REPO_BRANCH = os.environ.get('IM_REPO_BRANCH')
+    if IM_REPO_BRANCH is None:
+        IM_REPO_BRANCH = ''
 
     environment = {
-        'MINE_NAME': 'biotestmine',
-        'MINE_REPO_URL': '',
-        'IM_DATA_DIR': '/home/home/.local/share/intermine_boot/',
-        'MEM_OPTS': '-Xmx2g -Xms1g',
-        'IM_REPO_URL': '',
-        'IM_REPO_BRANCH': ''
+        'MINE_NAME': MINE_NAME,
+        'MINE_REPO_URL': MINE_REPO_URL,
+        'IM_DATA_DIR': env['data_dir'],
+        'MEM_OPTS': MEM_OPTS,
+        'IM_REPO_URL': IM_REPO_URL,
+        'IM_REPO_BRANCH': IM_REPO_BRANCH
     }
 
     volumes = {
-        '/home/home/.local/share/intermine_boot/docker/mine/dump': {
+        env['data_dir'] / 'docker' / 'mine' / 'dump': {
             'bind': '/home/intermine/intermine/dump',
             'mode': 'rw'
         },
 
-        '/home/home/.local/share/intermine_boot/docker/mine/configs/': {
+        env['data_dir'] / 'docker' / 'mine' / 'configs': {
             'bind': '/home/intermine/intermine/configs',
             'mode': 'rw'
         },
-        '/home/home/.local/share/intermine_boot/docker/mine/packages': {
+        env['data_dir'] / 'docker' / 'mine' / 'packages': {
             'bind': '/home/intermine/.m2',
             'mode': 'rw'
         },
-        '/home/home/.local/share/intermine_boot/docker/mine/intermine': {
+        env['data_dir'] / 'docker' / 'mine' / 'intermine': {
             'bind': '/home/intermine/.intermine',
             'mode': 'rw'
         },
-        '/home/home/.local/share/intermine_boot/docker/mine/biotestmine': {
+        env['data_dir'] / 'docker' / 'mine' / 'biotestmine': {
             'bind': '/home/intermine/intermine/biotestmine',
             'mode': 'rw'
         }
