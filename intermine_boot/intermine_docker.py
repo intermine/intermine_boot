@@ -92,10 +92,14 @@ def up(options, env):
     if options['build_images']:
         print ('Building images...')
         img_path = compose_path.parent
-        tomcat_image = client.images.build(path=str(img_path / 'tomcat'))
-        solr_image = client.images.buld(path=str(img_path / 'solr'))
-        postgres_image = client.images.build(path=str(img_path / 'postgres'))
-        intermine_builder_path = client.images.build(path=str(img_path / 'intermine_builder'))
+        tomcat_image = client.images.build(
+            path=str(img_path / 'tomcat'), dockerfile='tomcat.Dockerfile')
+        solr_image = client.images.buld(
+            path=str(img_path / 'solr'), dockerfile='solr.Dockerfile')
+        postgres_image = client.images.build(
+            path=str(img_path / 'postgres'), dockerfile='postgres.Dockerfile')
+        intermine_builder_path = client.images.build(
+            path=str(img_path / 'intermine_builder'), dockefile='intermine_builder.Dockerfile')
     else:
         print ('Pulling images...')
         tomcat_image = client.images.pull('intermine/tomcat:latest')
