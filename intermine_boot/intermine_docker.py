@@ -1,3 +1,4 @@
+import docker
 from pathlib import Path
 import pickle as pkl
 import subprocess
@@ -77,6 +78,7 @@ def up(options, env):
             shutil.rmtree(compose_path.parent)
     
     if not same_conf_exist:
+        print ('Same conf not found...', compose_path.parent)
         Repo.clone_from(DOCKER_COMPOSE_REPO, compose_path.parent, 
                     progress=utils.GitProgressPrinter())
 
@@ -86,23 +88,43 @@ def up(options, env):
                     'IM_REPO_BRANCH='+options['im_branch']]
                    if options['build_im'] else [])
 
-    if not options['build_images']:
-        # Make sure dockerhub images are up-to-date.
-        subprocess.run(['docker-compose',
-                        '-f', compose_path.name,
-                        'pull'],
-                       check=True,
-                       cwd=compose_path.parent)
+    client = docker.from_env()
+    if options['build_images']:
+        print ('Building images...')
+        img_path = compose_path.parent
+        tomcat_image = client.images.build(path=str(img_path / 'tomcat'))
+        solr_image = client.images.buld(path=str(img_path / 'solr'))
+        postgres_image = client.images.build(path=str(img_path / 'postgres'))
+        intermine_builder_path = client.images.build(path=str(img_path / 'intermine_builder'))
+    else:
+        print ('Pulling images...')
+        tomcat_image = client.images.pull('intermine/tomcat:latest')
+        solr_image = client.images.pull('intermine/solr:latest')
+        postgres_image = client.images.pull('intermine/postgres:latest')
+        intermine_builder_image = client.images.pull('intermine/builder:latest')
+
+    print ('Starting containers...')
+    tomcat_container = create_tomcat_container(client, tomcat_image)
+    solr_container = create_solr_container(client, solr_image, env)
+    postgres_container = create_postgres_container(client, postgres_image, env)
+    intermine_builder_container = create_intermine_builder_container(
+        client, intermine_builder_image, env)
+        # # Make sure dockerhub images are up-to-date.
+        # subprocess.run(['docker-compose',
+        #                 '-f', compose_path.name,
+        #                 'pull'],
+        #                check=True,
+        #                cwd=compose_path.parent)
 
 
-    subprocess.run([*ENV_VARS, *option_vars,
-                    'docker-compose',
-                    '-f', compose_path.name,
-                    'up', '-d'] +
-                   (['--build', '--force-recreate']
-                    if options['build_images'] else []),
-                   check=True,
-                   cwd=compose_path.parent)
+    # subprocess.run([*ENV_VARS, *option_vars,
+    #                 'docker-compose',
+    #                 '-f', compose_path.name,
+    #                 'up', '-d'] +
+    #                (['--build', '--force-recreate']
+    #                 if options['build_images'] else []),
+    #                check=True,
+    #                cwd=compose_path.parent)
     
     _store_conf(env['data_dir'], options)
 
@@ -157,7 +179,7 @@ def create_tomcat_container(client, image):
     }
 
     tomcat_container = client.containers.run(
-        image, environment=envs, ports=ports, detach=True
+        image, name='tomcat_container', environment=envs, ports=ports, detach=True
         )
     
     return tomcat_container
@@ -188,7 +210,7 @@ def create_solr_container(client, image, env):
     }
 
     solr_container = client.containers.run(
-        image, environment=envs, user=user, volumes=volumes, detach=True
+        image, name='solr_container', environment=envs, user=user, volumes=volumes, detach=True
         )
 
     return solr_container
@@ -205,7 +227,7 @@ def create_postgres_container(client, image, env):
     }
 
     postgres_container = client.containers.run(
-        image, user=user, volumes=volumes, detach=True)
+        image, name='postgres_container', user=user, volumes=volumes, detach=True)
 
     return postgres_container
 
@@ -269,6 +291,6 @@ def create_intermine_builder_container(client, image, env):
     }
 
     intermine_builder_container = client.containers.run(
-        image, user=user, environment=environment, volumes=volumes, detach=True)
+        image, name='intermine_container', user=user, environment=environment, volumes=volumes, detach=True)
 
     return intermine_builder_container
