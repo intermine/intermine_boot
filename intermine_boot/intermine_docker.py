@@ -113,6 +113,17 @@ def up(options, env):
     postgres_container = create_postgres_container(client, postgres_image, env)
     intermine_builder_container = create_intermine_builder_container(
         client, intermine_builder_image, env)
+
+    logs = open('error.log', 'w')
+
+    logs.write('TOMCAT........')
+    logs.write(tomcat_container.logs())
+    logs.write('\n\n\nSOLR............')
+    logs.write(solr_container.logs())
+    logs.write('\n\n\nPOSTGRES...........')
+    logs.write(postgres_container.logs())
+    logs.write('\n\n\nINTERMINE...........')
+    logs.write(intermine_builder_container.logs())
         # # Make sure dockerhub images are up-to-date.
         # subprocess.run(['docker-compose',
         #                 '-f', compose_path.name,
@@ -171,11 +182,8 @@ def create_archives(options, env):
 
 
 def create_tomcat_container(client, image):
-    MEM_OPTS = os.environ.get('MEM_OPTS')
-    if MEM_OPTS is None:
-        MEM_OPTS = "-Xmx1g -Xms500m"
     envs = {
-        'MEM_OPTS': MEM_OPTS
+        'MEM_OPTS': os.environ.get('MEM_OPTS', '-Xmx1g -Xms500m')
     }
 
     ports = {
@@ -190,17 +198,9 @@ def create_tomcat_container(client, image):
 
 
 def create_solr_container(client, image, env):
-    MEM_OPTS = os.environ.get('MEM_OPTS')
-    if MEM_OPTS is None:
-        MEM_OPTS = "-Xmx2g -Xms1g"
-
-    MINE_NAME = os.environ.get('MINE_NAME')
-    if MINE_NAME is None:
-        MINE_NAME = 'biotestmine'
-
     envs = {
-        'MEM_OPTS': MEM_OPTS,
-        'MINE_NAME': MINE_NAME
+        'MEM_OPTS': os.environ.get('MEM_OPTS', '-Xmx2g -Xms1g'),
+        'MINE_NAME': os.environ.get('MINE_NAME', 'biotestmine')
     }
 
     user = _get_docker_user()
@@ -241,33 +241,13 @@ def create_intermine_builder_container(client, image, env):
 
     data_dir = env['data_dir'] / 'docker' / 'data'
 
-    MINE_NAME = os.environ.get('MINE_NAME')
-    if MINE_NAME is None:
-        MINE_NAME = 'biotestmine'
-
-    MINE_REPO_URL = os.environ.get('MINE_REPO_URL')
-    if MINE_REPO_URL is None:
-        MINE_REPO_URL = ''
-
-    MEM_OPTS = os.environ.get('MEM_OPTS')
-    if MEM_OPTS is None:
-        MEM_OPTS = '-Xmx2g -Xms1g'
-    
-    IM_REPO_URL = os.environ.get('IM_REPO_URL')
-    if IM_REPO_URL is None:
-        IM_REPO_URL = ''
-
-    IM_REPO_BRANCH = os.environ.get('IM_REPO_BRANCH')
-    if IM_REPO_BRANCH is None:
-        IM_REPO_BRANCH = ''
-
     environment = {
-        'MINE_NAME': MINE_NAME,
-        'MINE_REPO_URL': MINE_REPO_URL,
+        'MINE_NAME': os.environ.get('MINE_NAME', 'biotestmine'),
+        'MINE_REPO_URL': os.environ.get('MINE_REPO_URL', ''),
         'IM_DATA_DIR': env['data_dir'],
-        'MEM_OPTS': MEM_OPTS,
-        'IM_REPO_URL': IM_REPO_URL,
-        'IM_REPO_BRANCH': IM_REPO_BRANCH
+        'MEM_OPTS': os.environ.get('MEM_OPTS', '-Xmx2g -Xms1g'),
+        'IM_REPO_URL': os.environ.get('IM_REPO_URL'),
+        'IM_REPO_BRANCH': os.environ.get('IM_REPO_BRANCH')
     }
 
     volumes = {
