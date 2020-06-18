@@ -65,6 +65,18 @@ def _create_volume_dirs(compose_path):
                 volume_dir = volume.split(':')[0]
                 Path(compose_path.parent / volume_dir).mkdir(parents=True, exist_ok=True)
 
+def _create_volumes(env):
+    data_dir = env['data_dir'] / 'docker'
+    os.mkdir(data_dir / 'data')
+    os.mkdir(data_dir / 'mine')
+    os.mkdir(data_dir / 'mine' / 'dumps')
+    os.mkdir(data_dir / 'mine' / 'configs')
+    os.mkdir(data_dir / 'mine' / 'packages')
+    os.mkdir(data_dir / 'mine' / 'intermine')
+    os.mkdir(data_dir / 'mine' / 'biotestmine')
+    os.mkdir(data_dir / 'mine' / '.intermine')
+    os.mkdir(data_dir / 'mine' / '.m2')
+
 def up(options, env):
     compose_path = _get_compose_path(options, env)
 
@@ -82,7 +94,8 @@ def up(options, env):
         Repo.clone_from(DOCKER_COMPOSE_REPO, compose_path.parent, 
                     progress=utils.GitProgressPrinter())
 
-    _create_volume_dirs(compose_path)
+    #_create_volume_dirs(compose_path)
+    _create_volumes(env)
 
     option_vars = (['IM_REPO_URL='+options['im_repo'],
                     'IM_REPO_BRANCH='+options['im_branch']]
@@ -93,13 +106,13 @@ def up(options, env):
         print ('Building images...')
         img_path = compose_path.parent
         tomcat_image = client.images.build(
-            path=str(img_path / 'tomcat'), dockerfile='tomcat.Dockerfile')
+            path=str(img_path / 'tomcat'), tag='tomcat', dockerfile='tomcat.Dockerfile')[0]
         solr_image = client.images.build(
-            path=str(img_path / 'solr'), dockerfile='solr.Dockerfile')
+            path=str(img_path / 'solr'), tag='solr', dockerfile='solr.Dockerfile')[0]
         postgres_image = client.images.build(
-            path=str(img_path / 'postgres'), dockerfile='postgres.Dockerfile')
-        intermine_builder_path = client.images.build(
-            path=str(img_path / 'intermine_builder'), dockerfile='intermine_builder.Dockerfile')
+            path=str(img_path / 'postgres'), tag='postgres', dockerfile='postgres.Dockerfile')[0]
+        intermine_builder_image = client.images.build(
+            path=str(img_path / 'intermine_builder'), tag='builder', dockerfile='intermine_builder.Dockerfile')[0]
     else:
         print ('Pulling images...')
         tomcat_image = client.images.pull('intermine/tomcat:latest')
@@ -114,16 +127,14 @@ def up(options, env):
     intermine_builder_container = create_intermine_builder_container(
         client, intermine_builder_image, env)
 
-    logs = open('error.log', 'w')
-
-    logs.write('TOMCAT........')
-    logs.write(tomcat_container.logs())
-    logs.write('\n\n\nSOLR............')
-    logs.write(solr_container.logs())
-    logs.write('\n\n\nPOSTGRES...........')
-    logs.write(postgres_container.logs())
-    logs.write('\n\n\nINTERMINE...........')
-    logs.write(intermine_builder_container.logs())
+    print('TOMCAT........')
+    print(tomcat_container.logs())
+    print('\n\n\nSOLR............')
+    print(solr_container.logs())
+    print('\n\n\nPOSTGRES...........')
+    print(postgres_container.logs())
+    print('\n\n\nINTERMINE...........')
+    print(intermine_builder_container.logs())
         # # Make sure dockerhub images are up-to-date.
         # subprocess.run(['docker-compose',
         #                 '-f', compose_path.name,

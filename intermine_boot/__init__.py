@@ -4,6 +4,7 @@ import re
 import click
 from xdg import (XDG_DATA_HOME)
 from intermine_boot import commands
+import pathlib
 
 MODE_OPTIONS = ['start', 'stop', 'build', 'load', 'clean']
 TARGET_OPTIONS = ['local']
@@ -26,6 +27,7 @@ def cli(**options):
     """
 
     data_dir = XDG_DATA_HOME / 'intermine_boot'
+    #data_dir = pathlib.Path('/home/home/') / 'intermine_boot'
     if not data_dir.is_dir():
         data_dir.mkdir(parents=True)
     env = {
