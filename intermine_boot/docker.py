@@ -40,13 +40,14 @@ def _store_conf(path_to_config, options):
 
 
 def _get_compose_path(options, env):
-    work_dir = env['data_dir'] / 'docker'
+    compose_path = Path(os.getcwd()) / './docker-intermine-gradle'
     compose_file = 'dockerhub.docker-compose.yml'
     if options['build_images']:
         compose_file = 'local.docker-compose.yml'
-    return work_dir / compose_file
+    return compose_path / compose_file
+        
 
-def _create_volume_dirs(compose_path):
+def _create_volume_dirs(compose_path, data_dir):
     with open(compose_path, 'r') as stream:
         compose_dict = yaml.safe_load(stream)
 
@@ -65,20 +66,13 @@ def _create_volume_dirs(compose_path):
 def up(options, env):
     compose_path = _get_compose_path(options, env)
 
-    same_conf_exist = False
-    if compose_path.parent.is_dir():
-        if _is_conf_same(env['data_dir'], options):
-            print ('Same configuration exist. Running local compose file...') 
-            same_conf_exist = True
-        else:
-            print ('Configuration change detected. Downloading compose file...')
-            shutil.rmtree(compose_path.parent)
-    
-    if not same_conf_exist:
-        Repo.clone_from(DOCKER_COMPOSE_REPO, compose_path.parent, 
-                    progress=utils.GitProgressPrinter())
+    if (env['data_dir'] / 'docker').is_dir():
+        if not _is_conf_same(env['data_dir'], options):
+            shutil.rmtree(env['data_dir'] / 'docker')
+    else:
+        os.mkdir(env['data_dir'] / 'docker')
 
-    _create_volume_dirs(compose_path)
+    _create_volume_dirs(compose_path, env['data_dir'] / 'docker')
 
     option_vars = (['IM_REPO_URL='+options['im_repo'],
                     'IM_REPO_BRANCH='+options['im_branch']]
