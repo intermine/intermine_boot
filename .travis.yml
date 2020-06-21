@@ -6,3 +6,6 @@ python:
 
 install:
     - pip install --editable .
+
+script:
+    - python -m unittest
