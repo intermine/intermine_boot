@@ -5,4 +5,8 @@ python:
     - "3.8"
 
 install:
-    - pip install --editable
+    - pip install --editable .
+
+
+script:
+    - python -m unittest
