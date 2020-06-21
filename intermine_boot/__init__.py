@@ -10,6 +10,7 @@ TARGET_OPTIONS = ['local']
 
 
 @click.command()
+@click.version_option('0.0.2')
 @click.argument('mode', type=click.Choice(MODE_OPTIONS, case_sensitive=False))
 @click.argument('target', type=click.Choice(TARGET_OPTIONS, case_sensitive=False))
 @click.option('--ci', is_flag=True, default=False, help='Run in CI mode.')
