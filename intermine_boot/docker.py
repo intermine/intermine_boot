@@ -40,7 +40,7 @@ def _store_conf(path_to_config, options):
 
 
 def _get_compose_path(options, env):
-    compose_path = Path(os.getcwd()) / './docker-intermine-gradle'
+    compose_path = Path(__file__).parent.parent / 'docker-intermine-gradle'
     compose_file = 'dockerhub.docker-compose.yml'
     if options['build_images']:
         compose_file = 'local.docker-compose.yml'
