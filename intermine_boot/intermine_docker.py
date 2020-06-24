@@ -49,22 +49,6 @@ def _get_compose_path(options, env):
         compose_file = 'local.docker-compose.yml'
     return work_dir / compose_file
 
-def _create_volume_dirs(compose_path):
-    with open(compose_path, 'r') as stream:
-        compose_dict = yaml.safe_load(stream)
-
-        for service in compose_dict['services']:
-            service_dict = compose_dict['services'][service]
-
-            if 'volumes' not in service_dict:
-                continue
-
-            volumes = service_dict['volumes']
-
-            for volume in volumes:
-                volume_dir = volume.split(':')[0]
-                Path(compose_path.parent / volume_dir).mkdir(parents=True, exist_ok=True)
-
 def _create_volumes(env):
     data_dir = env['data_dir'] / 'docker'
     os.mkdir(data_dir / 'data')
@@ -94,7 +78,6 @@ def up(options, env):
         Repo.clone_from(DOCKER_COMPOSE_REPO, compose_path.parent, 
                     progress=utils.GitProgressPrinter())
 
-    #_create_volume_dirs(compose_path)
     _create_volumes(env)
 
     option_vars = (['IM_REPO_URL='+options['im_repo'],
@@ -135,22 +118,6 @@ def up(options, env):
     print(postgres_container.logs())
     print('\n\n\nINTERMINE...........')
     print(intermine_builder_container.logs())
-        # # Make sure dockerhub images are up-to-date.
-        # subprocess.run(['docker-compose',
-        #                 '-f', compose_path.name,
-        #                 'pull'],
-        #                check=True,
-        #                cwd=compose_path.parent)
-
-
-    # subprocess.run([*ENV_VARS, *option_vars,
-    #                 'docker-compose',
-    #                 '-f', compose_path.name,
-    #                 'up', '-d'] +
-    #                (['--build', '--force-recreate']
-    #                 if options['build_images'] else []),
-    #                check=True,
-    #                cwd=compose_path.parent)
     
     _store_conf(env['data_dir'], options)
 
