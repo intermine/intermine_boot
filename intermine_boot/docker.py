@@ -45,7 +45,7 @@ def _get_compose_path(options, env):
     if options['build_images']:
         compose_file = 'local.docker-compose.yml'
     return compose_path / compose_file
-        
+
 
 def _create_volume_dirs(compose_path, data_dir):
     with open(compose_path, 'r') as stream:
