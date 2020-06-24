@@ -1,1 +1,11 @@
-recursive-include docker-intermine-gradle *
+include docker-intermine-gradle/ *.yml
+
+include docker-intermine-gradle/intermine-builder/ *.sh *.Dockerfile
+
+include docker-intermine-gradle/postgres/ *.conf *.sh *.Dockerfile docker-healthcheck
+
+include docker-intermine-gradle/solr/ *.Dockerfile
+include docker-intermine-gradle/solr/scripts/ *.sh
+
+include docker-intermine-gradle/tomcat/ *.Dockerfile
+include docker-intermine-gradle/configs/ *.xml
