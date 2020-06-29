@@ -111,15 +111,6 @@ def up(options, env):
     postgres_container = create_postgres_container(client, postgres_image, env)
     intermine_builder_container = create_intermine_builder_container(
         client, intermine_builder_image, env)
-
-    print('TOMCAT........')
-    print(tomcat_container.logs())
-    print('\n\n\nSOLR............')
-    print(solr_container.logs())
-    print('\n\n\nPOSTGRES...........')
-    print(postgres_container.logs())
-    print('\n\n\nINTERMINE...........')
-    print(intermine_builder_container.logs())
     
     _store_conf(env['data_dir'], options)
 
