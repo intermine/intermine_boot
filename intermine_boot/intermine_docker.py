@@ -50,8 +50,10 @@ def _get_compose_path(options, env):
     return work_dir / compose_file
 
 def _create_volumes(env):
-    data_dir = env['data_dir'] / 'docker'
-    os.mkdir(data_dir / 'data')
+    data_dir = env['data_dir'] / 'docker' / 'data'
+    os.mkdir(data_dir)
+    os.mkdir(data_dir / 'solr')
+    os.mkdir(data_dir / 'postgres')
     os.mkdir(data_dir / 'mine')
     os.mkdir(data_dir / 'mine' / 'dumps')
     os.mkdir(data_dir / 'mine' / 'configs')
@@ -168,9 +170,15 @@ def create_tomcat_container(client, image):
         8080: 9999
     }
 
+    print ('\n\nStarting Tomcat container...\n')
     tomcat_container = client.containers.run(
-        image, name='tomcat_container', environment=envs, ports=ports, detach=True
-        )
+        image, name='tomcat_container', environment=envs, ports=ports,
+        detach=True)
+
+    for log in tomcat_container.logs(stream=True, timestamps=True):
+        print(log)
+        if 'Server startup' in str(log):
+            break
     
     return tomcat_container
 
@@ -183,7 +191,7 @@ def create_solr_container(client, image, env):
 
     user = _get_docker_user()
 
-    data_dir = env['data_dir'] / 'docker' / 'data'
+    data_dir = env['data_dir'] / 'docker' / 'data' / 'solr'
     volumes = {
         data_dir: {
             'bind': '/var/solr',
@@ -191,16 +199,22 @@ def create_solr_container(client, image, env):
         }
     }
 
+    print('\n\nStarting Solr container...\n')
     solr_container = client.containers.run(
-        image, name='solr_container', environment=envs, user=user, volumes=volumes, detach=True
-        )
+        image, name='solr_container', environment=envs, user=user, volumes=volumes,
+        detach=True)
+
+    for log in solr_container.logs(stream=True, timestamps=True):
+        print (log)
+        if 'Registered new searcher' in str(log):
+            break
 
     return solr_container
 
 
 def create_postgres_container(client, image, env):
     user = _get_docker_user()
-    data_dir = env['data_dir'] / 'docker' / 'data'
+    data_dir = env['data_dir'] / 'docker' / 'data' / 'postgres'
     volumes = {
         data_dir : {
             'bind': '/var/lib/postgresql/data',
@@ -208,8 +222,15 @@ def create_postgres_container(client, image, env):
         }
     }
 
+    print ('\n\nStarting Postgres container...\n')
     postgres_container = client.containers.run(
-        image, name='postgres_container', user=user, volumes=volumes, detach=True)
+        image, name='postgres_container', user=user, volumes=volumes,
+        detach=True)
+
+    for log in postgres_container.logs(stream=True, timestamps=True):
+        print (log)
+        if 'autovacuum launcher started' in str(log):
+            break
 
     return postgres_container
 
@@ -224,35 +245,42 @@ def create_intermine_builder_container(client, image, env):
         'MINE_REPO_URL': os.environ.get('MINE_REPO_URL', ''),
         'IM_DATA_DIR': env['data_dir'],
         'MEM_OPTS': os.environ.get('MEM_OPTS', '-Xmx2g -Xms1g'),
-        'IM_REPO_URL': os.environ.get('IM_REPO_URL'),
-        'IM_REPO_BRANCH': os.environ.get('IM_REPO_BRANCH')
+        'IM_REPO_URL': os.environ.get('IM_REPO_URL', ''),
+        'IM_REPO_BRANCH': os.environ.get('IM_REPO_BRANCH', '')
     }
 
+    mine_path = env['data_dir'] / 'docker' / 'data' / 'mine'
+
     volumes = {
-        env['data_dir'] / 'docker' / 'mine' / 'dump': {
+        mine_path / 'dump': {
             'bind': '/home/intermine/intermine/dump',
             'mode': 'rw'
         },
 
-        env['data_dir'] / 'docker' / 'mine' / 'configs': {
+        mine_path / 'configs': {
             'bind': '/home/intermine/intermine/configs',
             'mode': 'rw'
         },
-        env['data_dir'] / 'docker' / 'mine' / 'packages': {
+        mine_path / 'packages': {
             'bind': '/home/intermine/.m2',
             'mode': 'rw'
         },
-        env['data_dir'] / 'docker' / 'mine' / 'intermine': {
+        mine_path / 'intermine': {
             'bind': '/home/intermine/.intermine',
             'mode': 'rw'
         },
-        env['data_dir'] / 'docker' / 'mine' / 'biotestmine': {
+        mine_path / 'biotestmine': {
             'bind': '/home/intermine/intermine/biotestmine',
             'mode': 'rw'
         }
     }
 
+    print ('\n\nStarting Intermine container...\n\n')
     intermine_builder_container = client.containers.run(
-        image, name='intermine_container', user=user, environment=environment, volumes=volumes, detach=True)
+        image, name='intermine_container', user=user, environment=environment,
+        volumes=volumes, detach=True)
+
+    for log in intermine_builder_container.logs(stream=True, timestamps=True):
+        print (log)
 
     return intermine_builder_container
