@@ -1,0 +1,3 @@
+[submodule "docker-intermine-gradle"]
+	path = docker-intermine-gradle
+	url = https://github.com/intermine/docker-intermine-gradle

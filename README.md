@@ -1,3 +1,4 @@
+[![Build Status](https://travis-ci.com/22PoojaGaur/intermine_boot.svg?branch=master)](https://travis-ci.com/22PoojaGaur/intermine_boot)
 # intermine_boot
 
 A little app to spin up local containers in which to build an InterMine

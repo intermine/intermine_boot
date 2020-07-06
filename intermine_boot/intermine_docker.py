@@ -43,7 +43,8 @@ def _store_conf(path_to_config, options):
 
 
 def _get_compose_path(options, env):
-    work_dir = env['data_dir'] / 'docker'
+    #work_dir = env['data_dir'] / 'docker'
+    work_dir = Path(__file__).parent.parent / 'docker-intermine-gradle'
     compose_file = 'dockerhub.docker-compose.yml'
     if options['build_images']:
         compose_file = 'local.docker-compose.yml'
@@ -67,18 +68,16 @@ def up(options, env):
     compose_path = _get_compose_path(options, env)
 
     same_conf_exist = False
-    if compose_path.parent.is_dir():
+    if (env['data_dir'] / 'docker').is_dir():
         if _is_conf_same(env['data_dir'], options):
             print ('Same configuration exist. Running local compose file...') 
             same_conf_exist = True
         else:
             print ('Configuration change detected. Downloading compose file...')
-            shutil.rmtree(compose_path.parent)
+            shutil.rmtree(env['data_dir'])
     
     if not same_conf_exist:
-        print ('Same conf not found...', compose_path.parent)
-        Repo.clone_from(DOCKER_COMPOSE_REPO, compose_path.parent, 
-                    progress=utils.GitProgressPrinter())
+        os.mkdir(env['data_dir'] / 'docker')
 
     _create_volumes(env)
 

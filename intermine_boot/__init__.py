@@ -5,12 +5,14 @@ import click
 from xdg import (XDG_DATA_HOME)
 from intermine_boot import commands
 import pathlib
+import pkg_resources
 
 MODE_OPTIONS = ['start', 'stop', 'build', 'load', 'clean']
 TARGET_OPTIONS = ['local']
 
 
 @click.command()
+@click.version_option(pkg_resources.require('intermine_boot')[0].version)
 @click.argument('mode', type=click.Choice(MODE_OPTIONS, case_sensitive=False))
 @click.argument('target', type=click.Choice(TARGET_OPTIONS, case_sensitive=False))
 @click.option('--ci', is_flag=True, default=False, help='Run in CI mode.')
