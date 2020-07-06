@@ -231,11 +231,12 @@ def create_intermine_builder_container(client, image, env):
 
     data_dir = env['data_dir'] / 'docker' / 'data'
 
+    # IM_DATA_DIR temporarily removed
     environment = {
         'MINE_NAME': os.environ.get('MINE_NAME', 'biotestmine'),
         'MINE_REPO_URL': os.environ.get('MINE_REPO_URL', ''),
-        'IM_DATA_DIR': env['data_dir'],
         'MEM_OPTS': os.environ.get('MEM_OPTS', '-Xmx2g -Xms1g'),
+        'IM_DATA_DIR': os.environ.get('IM_DATA_DIR', ''),
         'IM_REPO_URL': os.environ.get('IM_REPO_URL', ''),
         'IM_REPO_BRANCH': os.environ.get('IM_REPO_BRANCH', '')
     }
