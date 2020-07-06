@@ -77,7 +77,7 @@ def up(options, env):
             shutil.rmtree(env['data_dir'])
     
     if not same_conf_exist:
-        os.mkdir(env['data_dir'] / 'docker')
+        os.mkdir(env['data_dir'] / 'docker/')
 
     _create_volumes(env)
 
@@ -114,25 +114,22 @@ def up(options, env):
     _store_conf(env['data_dir'], options)
 
 
+def remove_container(client, container_name):
+    try:
+        container = client.containers.get(container_name)
+    except docker.errors.NotFound:
+        container = None
+    
+    if container is not None:
+        container.remove(force=True)
+
+
 def down(options, env):
-    compose_path = _get_compose_path(options, env)
-    subprocess.run([*ENV_VARS,
-                    'docker-compose',
-                    '-f', compose_path.name,
-                    'down'],
-                   check=True,
-                   cwd=compose_path.parent)
-
-
-def monitor_builder(options, env):
-    compose_path = _get_compose_path(options, env)
-    # This command will print the logs from intermine_builder and exit
-    # once it finishes building (blocking until then).
-    subprocess.run(['docker-compose',
-                    '-f', compose_path.name,
-                    'logs', '-f', 'intermine_builder'],
-                   check=True,
-                   cwd=compose_path.parent)
+    client = docker.from_env()
+    remove_container(client, 'tomcat_container')
+    remove_container(client, 'postgres_container')
+    remove_container(client, 'solr_container')
+    remove_container(client, 'intermine_container')
 
 
 def create_archives(options, env):
