@@ -270,7 +270,8 @@ def create_intermine_builder_container(client, image, env):
     print ('\n\nStarting Intermine container...\n\n')
     intermine_builder_container = client.containers.run(
         image, name='intermine_builder', user=user, environment=environment,
-        volumes=volumes, detach=True, network=DOCKER_NETWORK_NAME)
+        volumes=volumes, detach=True, network=DOCKER_NETWORK_NAME,
+        links={'intermine_postgres': 'postgres', 'intermine_tomcat': 'tomcat', 'intermine_solr': 'solr'})
 
     for log in intermine_builder_container.logs(stream=True, timestamps=True):
         print (log)
