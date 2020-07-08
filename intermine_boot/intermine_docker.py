@@ -13,6 +13,9 @@ DOCKER_COMPOSE_REPO = 'https://github.com/intermine/docker-intermine-gradle'
 
 ENV_VARS = ['env', 'UID='+str(os.geteuid()), 'GID='+str(os.getegid())]
 
+# all docker containers created would be attached to this network
+DOCKER_NETWORK_NAME = 'intermine_boot'
+
 def _get_docker_user():
     return str(os.getuid()) + ':' + str(os.getgid())
 
@@ -104,11 +107,12 @@ def up(options, env):
         postgres_image = client.images.pull('intermine/postgres:latest')
         intermine_builder_image = client.images.pull('intermine/builder:latest')
 
+    docker_network = client.networks.create(DOCKER_NETWORK_NAME)
     print ('Starting containers...')
-    tomcat_container = create_tomcat_container(client, tomcat_image)
-    solr_container = create_solr_container(client, solr_image, env)
-    postgres_container = create_postgres_container(client, postgres_image, env)
-    intermine_builder_container = create_intermine_builder_container(
+    tomcat = create_tomcat_container(client, tomcat_image)
+    solr = create_solr_container(client, solr_image, env)
+    postgres = create_postgres_container(client, postgres_image, env)
+    intermine_builder = create_intermine_builder_container(
         client, intermine_builder_image, env)
     
     _store_conf(env['data_dir'], options)
@@ -159,8 +163,8 @@ def create_tomcat_container(client, image):
 
     print ('\n\nStarting Tomcat container...\n')
     tomcat_container = client.containers.run(
-        image, name='tomcat_container', environment=envs, ports=ports,
-        detach=True)
+        image, name='intermine_tomcat', environment=envs, ports=ports,
+        detach=True, network=DOCKER_NETWORK_NAME)
 
     for log in tomcat_container.logs(stream=True, timestamps=True):
         print(log)
@@ -188,8 +192,8 @@ def create_solr_container(client, image, env):
 
     print('\n\nStarting Solr container...\n')
     solr_container = client.containers.run(
-        image, name='solr_container', environment=envs, user=user, volumes=volumes,
-        detach=True)
+        image, name='intermine_solr', environment=envs, user=user, volumes=volumes,
+        detach=True, network=DOCKER_NETWORK_NAME)
 
     for log in solr_container.logs(stream=True, timestamps=True):
         print (log)
@@ -211,8 +215,8 @@ def create_postgres_container(client, image, env):
 
     print ('\n\nStarting Postgres container...\n')
     postgres_container = client.containers.run(
-        image, name='postgres_container', user=user, volumes=volumes,
-        detach=True)
+        image, name='intermine_postgres', user=user, volumes=volumes,
+        detach=True, network=DOCKER_NETWORK_NAME)
 
     for log in postgres_container.logs(stream=True, timestamps=True):
         print (log)
@@ -265,8 +269,8 @@ def create_intermine_builder_container(client, image, env):
 
     print ('\n\nStarting Intermine container...\n\n')
     intermine_builder_container = client.containers.run(
-        image, name='intermine_container', user=user, environment=environment,
-        volumes=volumes, detach=True)
+        image, name='intermine_builder', user=user, environment=environment,
+        volumes=volumes, detach=True, network=DOCKER_NETWORK_NAME)
 
     for log in intermine_builder_container.logs(stream=True, timestamps=True):
         print (log)
