@@ -80,7 +80,7 @@ def up(options, env):
             shutil.rmtree(env['data_dir'])
     
     if not same_conf_exist:
-        os.mkdir(env['data_dir'] / 'docker/')
+        (env['data_dir'] / 'docker/').mkdir(parents=True, exist_ok=True)
 
     _create_volumes(env)
 
@@ -163,7 +163,7 @@ def create_tomcat_container(client, image):
 
     print ('\n\nStarting Tomcat container...\n')
     tomcat_container = client.containers.run(
-        image, name='intermine_tomcat', environment=envs, ports=ports,
+        image, name='tomcat', environment=envs, ports=ports,
         detach=True, network=DOCKER_NETWORK_NAME)
 
     for log in tomcat_container.logs(stream=True, timestamps=True):
@@ -192,7 +192,7 @@ def create_solr_container(client, image, env):
 
     print('\n\nStarting Solr container...\n')
     solr_container = client.containers.run(
-        image, name='intermine_solr', environment=envs, user=user, volumes=volumes,
+        image, name='solr', environment=envs, user=user, volumes=volumes,
         detach=True, network=DOCKER_NETWORK_NAME)
 
     for log in solr_container.logs(stream=True, timestamps=True):
@@ -215,7 +215,7 @@ def create_postgres_container(client, image, env):
 
     print ('\n\nStarting Postgres container...\n')
     postgres_container = client.containers.run(
-        image, name='intermine_postgres', user=user, volumes=volumes,
+        image, name='postgres', user=user, volumes=volumes,
         detach=True, network=DOCKER_NETWORK_NAME)
 
     for log in postgres_container.logs(stream=True, timestamps=True):
@@ -268,12 +268,35 @@ def create_intermine_builder_container(client, image, env):
     }
 
     print ('\n\nStarting Intermine container...\n\n')
-    intermine_builder_container = client.containers.run(
-        image, name='intermine_builder', user=user, environment=environment,
-        volumes=volumes, detach=True, network=DOCKER_NETWORK_NAME,
-        links={'intermine_postgres': 'postgres', 'intermine_tomcat': 'tomcat', 'intermine_solr': 'solr'})
 
-    for log in intermine_builder_container.logs(stream=True, timestamps=True):
-        print (log)
+    try:
+        assert client.containers.get('postgres').status == 'running'
+    except AssertionError:
+        print ('Postgres container not running. Exiting...')
+        exit(1)
+
+    try:
+        assert client.containers.get('tomcat').status == 'running'
+    except AssertionError:
+        print ('Tomcat container not running. Exiting...')
+        exit(1)
+
+    try:
+        assert client.containers.get('solr').status == 'running'
+    except AssertionError:
+        print ('Solr container not running. Exiting...')
+
+    try:
+        intermine_builder_container = client.containers.run(
+            image, name='intermine_builder', user=user, environment=environment,
+            volumes=volumes, detach=False, stream=True, network=DOCKER_NETWORK_NAME)
+
+    except docker.errors.ImageNotFound:
+        print ('docker image not found. Exiting...')
+        exit(1)
+    except docker.errors.ContainerError as e:
+        print ('Error while running container')
+        print (e.msg)
+        exit(1)
 
     return intermine_builder_container
