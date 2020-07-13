@@ -55,17 +55,28 @@ def _get_compose_path(options, env):
 
 def _create_volumes(env):
     data_dir = env['data_dir'] / 'docker' / 'data'
-    os.mkdir(data_dir)
-    os.mkdir(data_dir / 'solr')
-    os.mkdir(data_dir / 'postgres')
-    os.mkdir(data_dir / 'mine')
-    os.mkdir(data_dir / 'mine' / 'dumps')
-    os.mkdir(data_dir / 'mine' / 'configs')
-    os.mkdir(data_dir / 'mine' / 'packages')
-    os.mkdir(data_dir / 'mine' / 'intermine')
-    os.mkdir(data_dir / 'mine' / 'biotestmine')
-    os.mkdir(data_dir / 'mine' / '.intermine')
-    os.mkdir(data_dir / 'mine' / '.m2')
+    # make dirs if not exist
+    Path(data_dir).mkdir(exist_ok=True)
+    Path(data_dir / 'solr').mkdir(exist_ok=True)
+    Path(data_dir / 'postgres').mkdir(exist_ok=True)
+    Path(data_dir / 'mine').mkdir(exist_ok=True)
+    Path(data_dir / 'mine' / 'dumps').mkdir(exist_ok=True)
+    Path(data_dir / 'mine' / 'configs').mkdir(exist_ok=True)
+    Path(data_dir / 'mine' / 'packages').mkdir(exist_ok=True)
+    Path(data_dir / 'mine' / 'intermine').mkdir(exist_ok=True)
+    Path(data_dir / 'mine' / 'biotestmine').mkdir(exist_ok=True)
+    Path(data_dir / 'mine' / '.intermine').mkdir(exist_ok=True)
+    Path(data_dir / 'mine' / '.m2').mkdir(exist_ok=True)
+
+
+def _create_network_if_not_exit(client):
+    try:
+        network = client.networks.get(DOCKER_NETWORK_NAME)
+    except docker.errors.NotFound:
+        network = client.networks.create(DOCKER_NETWORK_NAME)
+    
+    return network
+
 
 def up(options, env):
     compose_path = _get_compose_path(options, env)
@@ -107,7 +118,7 @@ def up(options, env):
         postgres_image = client.images.pull('intermine/postgres:latest')
         intermine_builder_image = client.images.pull('intermine/builder:latest')
 
-    docker_network = client.networks.create(DOCKER_NETWORK_NAME)
+    docker_network = _create_network_if_not_exit(client)
     print ('Starting containers...')
     tomcat = create_tomcat_container(client, tomcat_image)
     solr = create_solr_container(client, solr_image, env)
@@ -118,7 +129,7 @@ def up(options, env):
     _store_conf(env['data_dir'], options)
 
 
-def remove_container(client, container_name):
+def _remove_container(client, container_name):
     try:
         container = client.containers.get(container_name)
     except docker.errors.NotFound:
@@ -130,10 +141,10 @@ def remove_container(client, container_name):
 
 def down(options, env):
     client = docker.from_env()
-    remove_container(client, 'tomcat_container')
-    remove_container(client, 'postgres_container')
-    remove_container(client, 'solr_container')
-    remove_container(client, 'intermine_container')
+    _remove_container(client, 'tomcat')
+    _remove_container(client, 'postgres')
+    _remove_container(client, 'solr')
+    _remove_container(client, 'intermine_builder')
 
 
 def create_archives(options, env):
@@ -162,14 +173,9 @@ def create_tomcat_container(client, image):
     }
 
     print ('\n\nStarting Tomcat container...\n')
-    tomcat_container = client.containers.run(
-        image, name='tomcat', environment=envs, ports=ports,
-        detach=True, network=DOCKER_NETWORK_NAME)
-
-    for log in tomcat_container.logs(stream=True, timestamps=True):
-        print(log)
-        if 'Server startup' in str(log):
-            break
+    tomcat_container = _start_container(
+        client, image, name='tomcat', environment=envs, ports=ports,
+        network=DOCKER_NETWORK_NAME, log_match='Server startup')
     
     return tomcat_container
 
@@ -191,14 +197,9 @@ def create_solr_container(client, image, env):
     }
 
     print('\n\nStarting Solr container...\n')
-    solr_container = client.containers.run(
-        image, name='solr', environment=envs, user=user, volumes=volumes,
-        detach=True, network=DOCKER_NETWORK_NAME)
-
-    for log in solr_container.logs(stream=True, timestamps=True):
-        print (log)
-        if 'Registered new searcher' in str(log):
-            break
+    solr_container = _start_container(
+        client, image, name='solr', environment=envs, user=user, volumes=volumes,
+        network=DOCKER_NETWORK_NAME, log_match='Registered new searcher')
 
     return solr_container
 
@@ -214,14 +215,9 @@ def create_postgres_container(client, image, env):
     }
 
     print ('\n\nStarting Postgres container...\n')
-    postgres_container = client.containers.run(
-        image, name='postgres', user=user, volumes=volumes,
-        detach=True, network=DOCKER_NETWORK_NAME)
-
-    for log in postgres_container.logs(stream=True, timestamps=True):
-        print (log)
-        if 'autovacuum launcher started' in str(log):
-            break
+    postgres_container = _start_container(
+        client, image, name='postgres', user=user, volumes=volumes,
+        network=DOCKER_NETWORK_NAME, log_match='autovacuum launcher started')
 
     return postgres_container
 
@@ -231,7 +227,6 @@ def create_intermine_builder_container(client, image, env):
 
     data_dir = env['data_dir'] / 'docker' / 'data'
 
-    # IM_DATA_DIR temporarily removed
     environment = {
         'MINE_NAME': os.environ.get('MINE_NAME', 'biotestmine'),
         'MINE_REPO_URL': os.environ.get('MINE_REPO_URL', ''),
@@ -286,17 +281,28 @@ def create_intermine_builder_container(client, image, env):
     except AssertionError:
         print ('Solr container not running. Exiting...')
 
-    try:
-        intermine_builder_container = client.containers.run(
-            image, name='intermine_builder', user=user, environment=environment,
-            volumes=volumes, detach=False, stream=True, network=DOCKER_NETWORK_NAME)
-
-    except docker.errors.ImageNotFound:
-        print ('docker image not found. Exiting...')
-        exit(1)
-    except docker.errors.ContainerError as e:
-        print ('Error while running container')
-        print (e.msg)
-        exit(1)
+    intermine_builder_container = _start_container(
+        client, image, name='intermine_builder', user=user, environment=environment,
+        volumes=volumes, network=DOCKER_NETWORK_NAME)
 
     return intermine_builder_container
+
+
+def _start_container(client, image, name, user=None, environment=None, volumes=None, network=None, ports=None, log_match=None):
+    try:
+        container = client.containers.run(
+            image, name=name, user=user, environment=environment,
+            volumes=volumes, network=network, detach=True)
+        
+        for log in container.logs(stream=True, timestamps=True):
+            print (log)
+            if log_match is not None and log_match in str(log):
+                break
+    except docker.errors.ImageNotFound as e:
+        print ('docker image not found for %s ' % container_name, e.msg)
+        exit(1)
+    except docker.errors.ContainerError as e:
+        print ('Error while running container ', e.msg)
+        exit(1)
+    
+    return container
