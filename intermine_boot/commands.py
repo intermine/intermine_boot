@@ -42,7 +42,6 @@ def stop(options, env):
 def build(options, env):
     assert_docker(options, env)
     intermine_docker.up(options, env)
-    intermine_docker.monitor_builder(options, env)
     intermine_docker.down(options, env)
     intermine_docker.create_archives(options, env)
 

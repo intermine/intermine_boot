@@ -11,8 +11,6 @@ from intermine_boot import utils
 
 DOCKER_COMPOSE_REPO = 'https://github.com/intermine/docker-intermine-gradle'
 
-ENV_VARS = ['env', 'UID='+str(os.geteuid()), 'GID='+str(os.getegid())]
-
 # all docker containers created would be attached to this network
 DOCKER_NETWORK_NAME = 'intermine_boot'
 
@@ -45,13 +43,12 @@ def _store_conf(path_to_config, options):
     return
 
 
-def _get_compose_path(options, env):
-    #work_dir = env['data_dir'] / 'docker'
-    work_dir = Path(__file__).parent.parent / 'docker-intermine-gradle'
-    compose_file = 'dockerhub.docker-compose.yml'
-    if options['build_images']:
-        compose_file = 'local.docker-compose.yml'
-    return work_dir / compose_file
+def _get_container_path():
+    '''
+    Returns the path to docker-intermine-gradle submodule.
+    '''
+    return Path(__file__).parent.parent / 'docker-intermine-gradle'
+    
 
 def _create_volumes(env):
     data_dir = env['data_dir'] / 'docker' / 'data'
@@ -69,7 +66,7 @@ def _create_volumes(env):
     Path(data_dir / 'mine' / '.m2').mkdir(exist_ok=True)
 
 
-def _create_network_if_not_exit(client):
+def _create_network_if_not_exist(client):
     try:
         network = client.networks.get(DOCKER_NETWORK_NAME)
     except docker.errors.NotFound:
@@ -79,15 +76,13 @@ def _create_network_if_not_exit(client):
 
 
 def up(options, env):
-    compose_path = _get_compose_path(options, env)
-
     same_conf_exist = False
     if (env['data_dir'] / 'docker').is_dir():
         if _is_conf_same(env['data_dir'], options):
-            print ('Same configuration exist. Running local compose file...') 
+            print ('Same configuration exist. Using existing data...') 
             same_conf_exist = True
         else:
-            print ('Configuration change detected. Downloading compose file...')
+            print ('Configuration change detected. Removing existing data if any...')
             shutil.rmtree(env['data_dir'])
     
     if not same_conf_exist:
@@ -95,14 +90,10 @@ def up(options, env):
 
     _create_volumes(env)
 
-    option_vars = (['IM_REPO_URL='+options['im_repo'],
-                    'IM_REPO_BRANCH='+options['im_branch']]
-                   if options['build_im'] else [])
-
     client = docker.from_env()
     if options['build_images']:
         print ('Building images...')
-        img_path = compose_path.parent
+        img_path = _get_container_path()
         tomcat_image = client.images.build(
             path=str(img_path / 'tomcat'), tag='tomcat', dockerfile='tomcat.Dockerfile')[0]
         solr_image = client.images.build(
@@ -118,13 +109,13 @@ def up(options, env):
         postgres_image = client.images.pull('intermine/postgres:latest')
         intermine_builder_image = client.images.pull('intermine/builder:latest')
 
-    docker_network = _create_network_if_not_exit(client)
+    docker_network = _create_network_if_not_exist(client)
     print ('Starting containers...')
     tomcat = create_tomcat_container(client, tomcat_image)
     solr = create_solr_container(client, solr_image, env)
     postgres = create_postgres_container(client, postgres_image, env)
     intermine_builder = create_intermine_builder_container(
-        client, intermine_builder_image, env)
+        client, intermine_builder_image, env, options)
     
     _store_conf(env['data_dir'], options)
 
@@ -146,20 +137,23 @@ def down(options, env):
     _remove_container(client, 'solr')
     _remove_container(client, 'intermine_builder')
 
+    try:
+        client.networks.get('intermine_boot').remove()
+    except docker.errors.NotFound:
+        pass
+
 
 def create_archives(options, env):
-    compose_path = _get_compose_path(options, env)
-
     postgres_archive = env['data_dir'] / 'postgres'
-    postgres_data_dir = compose_path.parent / 'data' / 'postgres'
+    postgres_data_dir = env['data_dir'] / 'data' / 'postgres'
     shutil.make_archive(postgres_archive, 'zip', root_dir=postgres_data_dir)
 
     solr_archive = env['data_dir'] / 'solr'
-    solr_data_dir = compose_path.parent / 'data' / 'solr'
+    solr_data_dir = env['data_dir'] / 'data' / 'solr'
     shutil.make_archive(solr_archive, 'zip', root_dir=solr_data_dir)
 
     mine_archive = env['data_dir'] / 'biotestmine'
-    mine_data_dir = compose_path.parent / 'data' / 'mine' / 'biotestmine'
+    mine_data_dir = env['data_dir'] / 'data' / 'mine' / 'biotestmine'
     shutil.make_archive(mine_archive, 'zip', root_dir=mine_data_dir)
 
 
@@ -222,7 +216,7 @@ def create_postgres_container(client, image, env):
     return postgres_container
 
 
-def create_intermine_builder_container(client, image, env):
+def create_intermine_builder_container(client, image, env, options):
     user = _get_docker_user()
 
     data_dir = env['data_dir'] / 'docker' / 'data'
@@ -231,10 +225,16 @@ def create_intermine_builder_container(client, image, env):
         'MINE_NAME': os.environ.get('MINE_NAME', 'biotestmine'),
         'MINE_REPO_URL': os.environ.get('MINE_REPO_URL', ''),
         'MEM_OPTS': os.environ.get('MEM_OPTS', '-Xmx2g -Xms1g'),
-        'IM_DATA_DIR': os.environ.get('IM_DATA_DIR', ''),
-        'IM_REPO_URL': os.environ.get('IM_REPO_URL', ''),
-        'IM_REPO_BRANCH': os.environ.get('IM_REPO_BRANCH', '')
+        'IM_DATA_DIR': os.environ.get('IM_DATA_DIR', '')
     }
+
+    if options['build_im']:
+        IM_REPO_URL = os.environ.get('IM_REPO_URL', '')
+        IM_REPO_BRANCH = os.environ.get('IM_REPO_BRANCH', '')
+        environment['IM_REPO_URL'] = (
+            IM_REPO_URL if IM_REPO_URL != '' else options('im_repo'))
+        environment['IM_REPO_BRANCH'] = (
+            IM_REPO_BRANCH if IM_REPO_BRANCH != '' else options('im_branch'))
 
     mine_path = env['data_dir'] / 'docker' / 'data' / 'mine'
 
