@@ -8,9 +8,6 @@ from git import Repo,cmd
 import yaml
 from intermine_boot import utils
 
-
-DOCKER_COMPOSE_REPO = 'https://github.com/intermine/docker-intermine-gradle'
-
 # all docker containers created would be attached to this network
 DOCKER_NETWORK_NAME = 'intermine_boot'
 
