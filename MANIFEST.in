@@ -1,5 +1,3 @@
-include docker-intermine-gradle/*.yml
-
 recursive-include docker-intermine-gradle/intermine_builder *
 recursive-include docker-intermine-gradle/postgres *
 recursive-include docker-intermine-gradle/solr *

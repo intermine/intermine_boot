@@ -3,8 +3,9 @@ import sys
 import re
 import click
 from xdg import (XDG_DATA_HOME)
+from intermine_boot import commands
+import pathlib
 import pkg_resources
-from intermine_boot import docker, commands
 
 MODE_OPTIONS = ['start', 'stop', 'build', 'load', 'clean']
 TARGET_OPTIONS = ['local']
