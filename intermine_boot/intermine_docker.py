@@ -238,9 +238,9 @@ def create_intermine_builder_container(client, image, env, options):
         IM_REPO_URL = os.environ.get('IM_REPO_URL', '')
         IM_REPO_BRANCH = os.environ.get('IM_REPO_BRANCH', '')
         environment['IM_REPO_URL'] = (
-            IM_REPO_URL if IM_REPO_URL != '' else options('im_repo'))
+            IM_REPO_URL if IM_REPO_URL != '' else options['im_repo'])
         environment['IM_REPO_BRANCH'] = (
-            IM_REPO_BRANCH if IM_REPO_BRANCH != '' else options('im_branch'))
+            IM_REPO_BRANCH if IM_REPO_BRANCH != '' else options['im_branch'])
 
     mine_path = env['data_dir'] / 'docker' / 'data' / 'mine'
 
