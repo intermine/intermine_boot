@@ -45,7 +45,6 @@ def _get_container_path():
     Returns the path to docker-intermine-gradle submodule.
     '''
     return Path(__file__).parent.parent / 'docker-intermine-gradle'
-    
 
 def _create_volumes(env):
     data_dir = env['data_dir'] / 'docker' / 'data'
@@ -86,6 +85,15 @@ def up(options, env):
         (env['data_dir'] / 'docker/').mkdir(parents=True, exist_ok=True)
 
     _create_volumes(env)
+
+    # NOTE: This assumes the path provided points to a folder named biotestmine.
+    if options['datapath_im']:
+        print ('data path is ' + options['datapath_im'])
+        shutil.copytree(
+            Path(
+                options['datapath_im']) / 'biotestmine/', 
+                env['data_dir'] / 'docker' / 'data' / 'mine' / 'biotestmine/',
+                dirs_exist_ok=True)
 
     client = docker.from_env()
     if options['build_images']:
@@ -222,7 +230,8 @@ def create_intermine_builder_container(client, image, env, options):
         'MINE_NAME': os.environ.get('MINE_NAME', 'biotestmine'),
         'MINE_REPO_URL': os.environ.get('MINE_REPO_URL', ''),
         'MEM_OPTS': os.environ.get('MEM_OPTS', '-Xmx2g -Xms1g'),
-        'IM_DATA_DIR': os.environ.get('IM_DATA_DIR', '')
+        'IM_DATA_DIR': os.environ.get('IM_DATA_DIR', ''),
+        'IM_DATA_FROM_PATH': options['datapath_im'] if options['datapath_im'] else ''
     }
 
     if options['build_im']:

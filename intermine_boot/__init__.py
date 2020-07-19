@@ -23,6 +23,7 @@ TARGET_OPTIONS = ['local']
 @click.option('--bio-version', help='Use a specific version of InterMine\'s bio packages. Has no effect when used with `--build-im`, in which case the built version will be used.')
 @click.option('--build-images', is_flag=True, default=False, help='Build Docker images locally instead of using prebuilt images from Docker Hub.')
 @click.option('--rebuild', is_flag=True, default=False, help='Rebuild your mine from scratch even if it already exists.')
+@click.option('--datapath-im', default=None, help='Path of the directory containing biotestmine folder.')
 def cli(**options):
     """Here will be a description of this script.
     Remember to also document modes and targets.
