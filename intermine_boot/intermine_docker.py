@@ -42,7 +42,7 @@ def _store_conf(path_to_config, options):
 
 def _get_mine_name(options):
     if options['datapath_im']:
-        return options['datpath_im'].strip('/').split('/')[-1]
+        return options['datapath_im'].strip('/').split('/')[-1]
     else:
         return os.environ.get('MINE_NAME', 'biotestmine')
 
@@ -93,7 +93,6 @@ def up(options, env):
 
     _create_volumes(env, options)
 
-    # NOTE: This assumes the path provided points to a folder named biotestmine.
     if options['datapath_im']:
         print ('data path is ' + options['datapath_im'])
         shutil.copytree(
@@ -124,7 +123,7 @@ def up(options, env):
     docker_network = _create_network_if_not_exist(client)
     print ('Starting containers...')
     tomcat = create_tomcat_container(client, tomcat_image)
-    solr = create_solr_container(client, solr_image, env)
+    solr = create_solr_container(client, solr_image, env, options)
     postgres = create_postgres_container(client, postgres_image, env)
     intermine_builder = create_intermine_builder_container(
         client, intermine_builder_image, env, options)
