@@ -12,8 +12,9 @@ jobs:
               uses: actions/setup-python@v2
               with:
                   python-version: '3.x'
-            - name: Install intermine_boot
+            - name: Update
               run: "python3 -m pip install --upgrade pip setuptools wheel"
+            - name: Install intermine_boot
               run: "python3 -m pip install --editable ."
             - name: Run intermine boot
               run: "intermine_boot start local"
