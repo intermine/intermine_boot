@@ -23,6 +23,8 @@ def _is_conf_same(path_to_config, options):
     try:
         if (config['branch_name'] == options['im_branch']) and (
                 config['repo_name'] == options['im_repo']):
+            if options['datapath_im']:
+                return config['datapath_im'] == options['datapath_im']
             return True
         else:
             return False
@@ -34,6 +36,8 @@ def _store_conf(path_to_config, options):
     config = {}
     config['branch_name'] = options['im_branch']
     config['repo_name'] = options['im_repo']
+    if options['datapath_im']:
+        config['datapath_im'] = options['datapath_im']
 
     f = open(path_to_config / '.config', 'wb')
     pkl.dump(config, f)
@@ -237,7 +241,7 @@ def create_intermine_builder_container(client, image, env, options):
         'MINE_REPO_URL': os.environ.get('MINE_REPO_URL', ''),
         'MEM_OPTS': os.environ.get('MEM_OPTS', '-Xmx2g -Xms1g'),
         'IM_DATA_DIR': os.environ.get('IM_DATA_DIR', ''),
-        'IM_DATA_FROM_PATH': options['datapath_im'] if options['datapath_im'] else ''
+        'FORCE_MINE_BUILD': 'true' if options['datapath_im'] else 'false'
     }
 
     if options['build_im']:
