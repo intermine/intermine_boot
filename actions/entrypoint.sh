@@ -1,5 +1,5 @@
 #!/bin/sh
 
-apt update
-apt install python3
-apt install python3-pip
+apt update -y
+apt install python3 -y
+apt install python3-pip -y
