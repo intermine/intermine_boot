@@ -1,0 +1,14 @@
+name: "Work flow to run tests for intermine boot"
+on: push
+
+jobs:
+    build:
+        name: Setup intermine boot
+        runs-on: ubuntu-18.04
+        steps:
+            - uses: actions/checkout@v2
+            - uses: ./actions
+            - name: Install intermine_boot
+              run: "pip3 install --editable ."
+            - name: Run intermine boot
+              run: "intermine_boot start local"
