@@ -2,8 +2,8 @@ name: "Work flow to run tests for intermine boot"
 on: push
 
 jobs:
-    tests:
-        name: Setup intermine boot
+    test1:
+        name: Test intermine_boot start local
         runs-on: ubuntu-18.04
         steps:
             - uses: actions/checkout@v2
@@ -17,65 +17,58 @@ jobs:
             - name: Install intermine_boot
               run: "python3 -m pip install --editable ."
  
-            - name: Run intermine boot
+            - name: Run intermine boot command
               run: "intermine_boot start local"
             - name: Check if intermine loaded
               run: "curl localhost:9999/biotestmine/begin.do"
             - name: Stop intermine
               run: "intermine_boot stop local"
   
-            - name: Run intermine boot build images
+              
+
+    test2:
+        name: Test intermine_boot start local --build-images
+
+        runs-on: ubuntu-18.04
+        steps:
+            - uses: actions/checkout@v2
+            - uses: ./actions
+            - name: Setup python
+              uses: actions/setup-python@v2
+              with:
+                  python-version: '3.x'
+            - name: Update
+              run: "python3 -m pip install --upgrade pip setuptools wheel"
+            - name: Install intermine_boot
+              run: "python3 -m pip install --editable ."
+
+            - name: Run intermine boot command
               run: "intermine_boot start local --build-images"
             - name: Check if intermine loaded
               run: "curl localhost:9999/biotestmine/begin.do"
             - name: Stop intermine
               run: "intermine_boot stop local"
+
+    test3:
+        name: Test intermine_boot start local --build-im --im-branch bluegenes --build-images
+
+        runs-on: ubuntu-18.04
+        steps:
+            - uses: actions/checkout@v2
+            - uses: ./actions
+            - name: Setup python
+              uses: actions/setup-python@v2
+              with:
+                  python-version: '3.x'
+            - name: Update
+              run: "python3 -m pip install --upgrade pip setuptools wheel"
+            - name: Install intermine_boot
+              run: "python3 -m pip install --editable ."
               
-            - name: Run intermine_boot build im
+            - name: Run intermine boot command
               run: "intermine_boot start local --build-im --im-branch bluegenes --build-images"
             - name: Check if intermine loaded
               run: "curl localhost:9999/biotestmine/begin.do"
             - name: Stop intermine
               run: "intermine_boot stop local"
               
-              
-#   test1:
-#       name: Test intermine_boot start local
-#       needs: setup
-#       runs-on: ubuntu-18.04
-#       steps:
-#           - uses: actions/checkout@v2
-#           - name: Run intermine boot
-#             run: "intermine_boot start local"
-#           - name: Check if intermine loaded
-#             run: "curl localhost:9999/biotestmine/begin.do"
-#           - name: Stop intermine
-#             run: "intermine_boot stop local"
-
-#   test2:
-#       name: Test intermine_boot start local --build-images
-#       needs: setup
-#       runs-on: ubuntu-18.04
-#       steps:
-#           - uses: actions/checkout@v2
-#           - name: Run intermine boot build images
-#             run: "intermine_boot start local --build-images"
-#           - name: Check if intermine loaded
-#             run: "curl localhost:9999/biotestmine/begin.do"
-#           - name: Stop intermine
-#             run: "intermine_boot stop local"
-
-#   test3:
-#       name: Test intermine_boot start local --build-im --im-branch bluegenes --build-images
-#       needs: setup
-#       runs-on: ubuntu-18.04
-#       steps:
-#           - uses: actions/checkout@v2
-#           - name: Run intermine_boot build im
-#             run: "intermine_boot start local --build-im --im-branch bluegenes --build-images"
-#           - name: Check if intermine loaded
-#             run: "curl localhost:9999/biotestmine/begin.do"
-#           - name: Stop intermine
-#             run: "intermine_boot stop local"
-
-
