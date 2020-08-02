@@ -16,10 +16,10 @@ jobs:
               run: "python3 -m pip install --upgrade pip setuptools wheel"
             - name: Install intermine_boot
               run: "python3 -m pip install --editable ."
+
     test1:
         name: Test intermine_boot start local
         needs: setup
-        runs-on: ubuntu-18.04
         steps:
             - uses: actions/checkout@v2
             - name: Run intermine boot
@@ -32,7 +32,6 @@ jobs:
     test2:
         name: Test intermine_boot start local --build-images
         needs: setup
-        runs-on: ubuntu-18.04
         steps:
             - uses: actions/checkout@v2
             - name: Run intermine boot build images
@@ -45,7 +44,6 @@ jobs:
     test3:
         name: Test intermine_boot start local --build-im --im-branch bluegenes --build-images
         needs: setup
-        runs-on: ubuntu-18.04
         steps:
             - uses: actions/checkout@v2
             - name: Run intermine boot build im
