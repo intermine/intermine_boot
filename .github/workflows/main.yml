@@ -19,6 +19,7 @@ jobs:
             - name: Run intermine boot command
               run: "intermine_boot start local"
             - name: Check if intermine loaded
+              run: "apt install curl -y"
               run: "curl localhost:9999/biotestmine/begin.do"
             - name: Stop intermine
               run: "intermine_boot stop local"
@@ -43,6 +44,7 @@ jobs:
             - name: Run intermine boot command
               run: "intermine_boot start local --build-images"
             - name: Check if intermine loaded
+              run: "apt install curl -y"
               run: "curl localhost:9999/biotestmine/begin.do"
             - name: Stop intermine
               run: "intermine_boot stop local"
@@ -65,6 +67,7 @@ jobs:
             - name: Run intermine boot command
               run: "intermine_boot start local --build-im --im-branch bluegenes --build-images"
             - name: Check if intermine loaded
+              run: "apt install curl -y"
               run: "curl localhost:9999/biotestmine/begin.do"
             - name: Stop intermine
               run: "intermine_boot stop local"
