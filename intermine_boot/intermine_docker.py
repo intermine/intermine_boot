@@ -18,7 +18,7 @@ def _is_conf_same(path_to_config, options):
     conf_file_path = str(path_to_config) + '/.config'
     if not os.path.isfile(conf_file_path):
         return False
-    
+
     config = pkl.load(open(conf_file_path, 'rb'))
     try:
         if (config['branch_name'] == options['im_branch']) and (
@@ -55,7 +55,7 @@ def _get_container_path():
     '''
     Returns the path to docker-intermine-gradle submodule.
     '''
-    return Path(__file__).parent.parent / 'docker-intermine-gradle'
+    return Path(__file__).parent.parent.absolute() / 'docker-intermine-gradle'
 
 def _create_volumes(env, options):
     data_dir = env['data_dir'] / 'docker' / 'data'
@@ -78,7 +78,7 @@ def _create_network_if_not_exist(client):
         network = client.networks.get(DOCKER_NETWORK_NAME)
     except docker.errors.NotFound:
         network = client.networks.create(DOCKER_NETWORK_NAME)
-    
+
     return network
 
 
@@ -86,12 +86,12 @@ def up(options, env):
     same_conf_exist = False
     if (env['data_dir'] / 'docker').is_dir():
         if _is_conf_same(env['data_dir'], options):
-            print ('Same configuration exist. Using existing data...') 
+            print ('Same configuration exist. Using existing data...')
             same_conf_exist = True
         else:
             print ('Configuration change detected. Removing existing data if any...')
             shutil.rmtree(env['data_dir'])
-    
+
     if not same_conf_exist:
         (env['data_dir'] / 'docker/').mkdir(parents=True, exist_ok=True)
 
@@ -101,7 +101,7 @@ def up(options, env):
         print ('data path is ' + options['datapath_im'])
         shutil.copytree(
             Path(
-                options['datapath_im']), 
+                options['datapath_im']),
                 env['data_dir'] / 'docker' / 'data' / 'mine' / _get_mine_name(options),
                 dirs_exist_ok=True)
 
@@ -131,7 +131,7 @@ def up(options, env):
     postgres = create_postgres_container(client, postgres_image, env)
     intermine_builder = create_intermine_builder_container(
         client, intermine_builder_image, env, options)
-    
+
     _store_conf(env['data_dir'], options)
 
 
@@ -140,7 +140,7 @@ def _remove_container(client, container_name):
         container = client.containers.get(container_name)
     except docker.errors.NotFound:
         container = None
-    
+
     if container is not None:
         container.remove(force=True)
 
@@ -185,7 +185,7 @@ def create_tomcat_container(client, image):
     tomcat_container = _start_container(
         client, image, name='tomcat', environment=envs, ports=ports,
         network=DOCKER_NETWORK_NAME, log_match='Server startup')
-    
+
     return tomcat_container
 
 
@@ -309,7 +309,7 @@ def _start_container(client, image, name, user=None, environment=None, volumes=N
         container = client.containers.run(
             image, name=name, user=user, environment=environment,
             volumes=volumes, network=network, detach=True, ports=ports)
-        
+
         for log in container.logs(stream=True, timestamps=True):
             print (log.decode())
             if log_match is not None and log_match in str(log):
@@ -320,5 +320,5 @@ def _start_container(client, image, name, user=None, environment=None, volumes=N
     except docker.errors.ContainerError as e:
         print ('Error while running container ', e.msg)
         exit(1)
-    
+
     return container
