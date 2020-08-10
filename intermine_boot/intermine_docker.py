@@ -109,11 +109,6 @@ def up(options, env):
     if options['build_images']:
         print ('Building images...')
         img_path = _get_container_path()
-        print ('CONTAINER PATH IS')
-        print (_get_container_path())
-        print ('PATH TOMCAT CONTAINER')
-        print (str(img_path / 'tomcat'))
-        print (os.listdir(str(img_path)))
         tomcat_image = client.images.build(
             path=str(img_path / 'tomcat'), tag='tomcat', dockerfile='tomcat.Dockerfile')[0]
         solr_image = client.images.build(
