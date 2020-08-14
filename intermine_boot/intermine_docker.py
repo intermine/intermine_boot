@@ -126,13 +126,15 @@ def up(options, env):
 
     docker_network = _create_network_if_not_exist(client)
     print ('Starting containers...')
-    tomcat = create_tomcat_container(client, tomcat_image)
-    solr = create_solr_container(client, solr_image, env, options)
-    postgres = create_postgres_container(client, postgres_image, env)
-    intermine_builder = create_intermine_builder_container(
+    (tomcat, tomcat_status) = create_tomcat_container(client, tomcat_image)
+    (solr, solr_status) = create_solr_container(client, solr_image, env, options)
+    (postgres, postgres_status) = create_postgres_container(client, postgres_image, env)
+    (intermine_builder, intermine_builder_status) = create_intermine_builder_container(
         client, intermine_builder_image, env, options)
 
     _store_conf(env['data_dir'], options)
+
+    return (tomcat_status and solr_status and postgres_status and intermine_builder_status)
 
 
 def _remove_container(client, container_name):
@@ -304,7 +306,10 @@ def create_intermine_builder_container(client, image, env, options):
     return intermine_builder_container
 
 
-def _start_container(client, image, name, user=None, environment=None, volumes=None, network=None, ports=None, log_match=None):
+def _start_container(
+    client, image, name, user=None, environment=None, volumes=None,
+        network=None, ports=None, log_match=None):
+    status_code = True # A boolean value to indicate whether error occurs
     try:
         container = client.containers.run(
             image, name=name, user=user, environment=environment,
@@ -314,6 +319,8 @@ def _start_container(client, image, name, user=None, environment=None, volumes=N
             print (log.decode())
             if log_match is not None and log_match in str(log):
                 break
+            if 'ERROR' in str(log):
+                status_code = False
     except docker.errors.ImageNotFound as e:
         print ('docker image not found for %s ' % container_name, e.msg)
         exit(1)
@@ -321,4 +328,4 @@ def _start_container(client, image, name, user=None, environment=None, volumes=N
         print ('Error while running container ', e.msg)
         exit(1)
 
-    return container
+    return (container, status_code)
