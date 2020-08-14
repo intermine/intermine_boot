@@ -39,6 +39,7 @@ Make sure the [Requirements](README.md#requirements) are installed as well.
 Install [virtualenv](https://virtualenv.pypa.io/en/stable/installation/) if you haven't already.
 
 ```bash
+$ git submodule update --init
 $ virtualenv -p python3 venv
 $ . venv/bin/activate
 $ pip install --editable .
