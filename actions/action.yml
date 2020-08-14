@@ -1,7 +1,0 @@
-name: "Setup"
-desctiption: "Sets up image to run intermine_boot commands"
-author: "intermine@github.com"
-
-runs:
-    using: "docker"
-    image: "Dockerfile"
