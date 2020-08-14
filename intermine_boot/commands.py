@@ -31,8 +31,11 @@ def assert_docker(options, env):
 
 def start(options, env):
     assert_docker(options, env)
-    intermine_docker.up(options, env)
-    click.echo('Build completed. Visit http://localhost:9999/biotestmine to access your mine.')
+    status = intermine_docker.up(options, env)
+    if status:
+        click.echo('Build completed. Visit http://localhost:9999/biotestmine to access your mine.')
+    else:
+        click.echo('Build unsuccessful. Please check error logs.')
     # TODO: Once we support building mines other than biotestmine, we should make this text dynamic.
 
 def stop(options, env):
