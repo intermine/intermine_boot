@@ -23,6 +23,8 @@ def _is_conf_same(path_to_config, options):
     try:
         if (config['branch_name'] == options['im_branch']) and (
                 config['repo_name'] == options['im_repo']):
+            if options['datapath_im']:
+                return config['datapath_im'] == options['datapath_im']
             return True
         else:
             return False
@@ -34,10 +36,19 @@ def _store_conf(path_to_config, options):
     config = {}
     config['branch_name'] = options['im_branch']
     config['repo_name'] = options['im_repo']
+    if options['datapath_im']:
+        config['datapath_im'] = options['datapath_im']
 
     f = open(path_to_config / '.config', 'wb')
     pkl.dump(config, f)
     return
+
+
+def _get_mine_name(options):
+    if options['datapath_im']:
+        return options['datapath_im'].strip('/').split('/')[-1]
+    else:
+        return os.environ.get('MINE_NAME', 'biotestmine')
 
 
 def _get_container_path():
@@ -45,9 +56,8 @@ def _get_container_path():
     Returns the path to docker-intermine-gradle submodule.
     '''
     return Path(__file__).parent.parent / 'docker-intermine-gradle'
-    
 
-def _create_volumes(env):
+def _create_volumes(env, options):
     data_dir = env['data_dir'] / 'docker' / 'data'
     # make dirs if not exist
     Path(data_dir).mkdir(exist_ok=True)
@@ -58,7 +68,7 @@ def _create_volumes(env):
     Path(data_dir / 'mine' / 'configs').mkdir(exist_ok=True)
     Path(data_dir / 'mine' / 'packages').mkdir(exist_ok=True)
     Path(data_dir / 'mine' / 'intermine').mkdir(exist_ok=True)
-    Path(data_dir / 'mine' / 'biotestmine').mkdir(exist_ok=True)
+    Path(data_dir / 'mine' / _get_mine_name(options)).mkdir(exist_ok=True)
     Path(data_dir / 'mine' / '.intermine').mkdir(exist_ok=True)
     Path(data_dir / 'mine' / '.m2').mkdir(exist_ok=True)
 
@@ -85,7 +95,15 @@ def up(options, env):
     if not same_conf_exist:
         (env['data_dir'] / 'docker/').mkdir(parents=True, exist_ok=True)
 
-    _create_volumes(env)
+    _create_volumes(env, options)
+
+    if options['datapath_im']:
+        print ('data path is ' + options['datapath_im'])
+        shutil.copytree(
+            Path(
+                options['datapath_im']), 
+                env['data_dir'] / 'docker' / 'data' / 'mine' / _get_mine_name(options),
+                dirs_exist_ok=True)
 
     client = docker.from_env()
     if options['build_images']:
@@ -109,7 +127,7 @@ def up(options, env):
     docker_network = _create_network_if_not_exist(client)
     print ('Starting containers...')
     tomcat = create_tomcat_container(client, tomcat_image)
-    solr = create_solr_container(client, solr_image, env)
+    solr = create_solr_container(client, solr_image, env, options)
     postgres = create_postgres_container(client, postgres_image, env)
     intermine_builder = create_intermine_builder_container(
         client, intermine_builder_image, env, options)
@@ -149,8 +167,8 @@ def create_archives(options, env):
     solr_data_dir = env['data_dir'] / 'data' / 'solr'
     shutil.make_archive(solr_archive, 'zip', root_dir=solr_data_dir)
 
-    mine_archive = env['data_dir'] / 'biotestmine'
-    mine_data_dir = env['data_dir'] / 'data' / 'mine' / 'biotestmine'
+    mine_archive = env['data_dir'] / _get_mine_name(options)
+    mine_data_dir = env['data_dir'] / 'data' / 'mine' / _get_mine_name(options)
     shutil.make_archive(mine_archive, 'zip', root_dir=mine_data_dir)
 
 
@@ -160,7 +178,7 @@ def create_tomcat_container(client, image):
     }
 
     ports = {
-        8080: 9999
+        os.environ.get('TOMCAT_PORT', 8080): os.environ.get('TOMCAT_HOST_PORT', 9999)
     }
 
     print ('\n\nStarting Tomcat container...\n')
@@ -171,10 +189,10 @@ def create_tomcat_container(client, image):
     return tomcat_container
 
 
-def create_solr_container(client, image, env):
+def create_solr_container(client, image, env, options):
     envs = {
         'MEM_OPTS': os.environ.get('MEM_OPTS', '-Xmx2g -Xms1g'),
-        'MINE_NAME': os.environ.get('MINE_NAME', 'biotestmine')
+        'MINE_NAME': _get_mine_name(options)
     }
 
     user = _get_docker_user()
@@ -219,19 +237,20 @@ def create_intermine_builder_container(client, image, env, options):
     data_dir = env['data_dir'] / 'docker' / 'data'
 
     environment = {
-        'MINE_NAME': os.environ.get('MINE_NAME', 'biotestmine'),
+        'MINE_NAME': _get_mine_name(options),
         'MINE_REPO_URL': os.environ.get('MINE_REPO_URL', ''),
         'MEM_OPTS': os.environ.get('MEM_OPTS', '-Xmx2g -Xms1g'),
-        'IM_DATA_DIR': os.environ.get('IM_DATA_DIR', '')
+        'IM_DATA_DIR': os.environ.get('IM_DATA_DIR', ''),
+        'FORCE_MINE_BUILD': 'true' if options['datapath_im'] else 'false'
     }
 
     if options['build_im']:
         IM_REPO_URL = os.environ.get('IM_REPO_URL', '')
         IM_REPO_BRANCH = os.environ.get('IM_REPO_BRANCH', '')
         environment['IM_REPO_URL'] = (
-            IM_REPO_URL if IM_REPO_URL != '' else options('im_repo'))
+            IM_REPO_URL if IM_REPO_URL != '' else options['im_repo'])
         environment['IM_REPO_BRANCH'] = (
-            IM_REPO_BRANCH if IM_REPO_BRANCH != '' else options('im_branch'))
+            IM_REPO_BRANCH if IM_REPO_BRANCH != '' else options['im_branch'])
 
     mine_path = env['data_dir'] / 'docker' / 'data' / 'mine'
 
@@ -253,8 +272,8 @@ def create_intermine_builder_container(client, image, env, options):
             'bind': '/home/intermine/.intermine',
             'mode': 'rw'
         },
-        mine_path / 'biotestmine': {
-            'bind': '/home/intermine/intermine/biotestmine',
+        mine_path / _get_mine_name(options): {
+            'bind': '/home/intermine/intermine/' + _get_mine_name(options),
             'mode': 'rw'
         }
     }
@@ -289,10 +308,10 @@ def _start_container(client, image, name, user=None, environment=None, volumes=N
     try:
         container = client.containers.run(
             image, name=name, user=user, environment=environment,
-            volumes=volumes, network=network, detach=True)
+            volumes=volumes, network=network, detach=True, ports=ports)
         
         for log in container.logs(stream=True, timestamps=True):
-            print (log)
+            print (log.decode())
             if log_match is not None and log_match in str(log):
                 break
     except docker.errors.ImageNotFound as e:
