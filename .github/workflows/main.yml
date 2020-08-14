@@ -1,0 +1,75 @@
+name: "Work flow to run tests for intermine boot"
+on: push
+
+jobs:
+    test1:
+        name: Test intermine_boot start local
+        runs-on: ubuntu-18.04
+        steps:
+            - uses: actions/checkout@v2
+            - name: Setup python
+              uses: actions/setup-python@v2
+              with:
+                  python-version: '3.7.8'
+            - name: Update
+              run: "python3 -m pip install --upgrade pip setuptools wheel"
+            - name: Install intermine_boot
+              run: "python3 -m pip install --editable ."
+ 
+            - name: Run intermine boot command
+              run: "intermine_boot start local"
+            - name: Check if intermine loaded
+              run: "curl localhost:9999/biotestmine/begin.do"
+            - name: Stop intermine
+              run: "intermine_boot stop local"
+  
+              
+
+    test2:
+        name: Test intermine_boot start local --build-images
+
+        runs-on: ubuntu-18.04
+        steps:
+            - uses: actions/checkout@v2
+            - name: Setup python
+              uses: actions/setup-python@v2
+              with:
+                  python-version: '3.7.8'
+            - name: Update
+              run: "python3 -m pip install --upgrade pip setuptools wheel"
+            - name: Update submodule
+              run: "git submodule update --init"
+            - name: Install intermine_boot
+              run: "python3 -m pip install --editable ."
+
+            - name: Run intermine boot command
+              run: "intermine_boot start local --build-images"
+            - name: Check if intermine loaded
+              run: "curl localhost:9999/biotestmine/begin.do"
+            - name: Stop intermine
+              run: "intermine_boot stop local"
+
+    test3:
+        name: Test intermine_boot start local --build-im --im-branch bluegenes --build-images
+
+        runs-on: ubuntu-18.04
+        steps:
+            - uses: actions/checkout@v2
+            - name: Setup python
+              uses: actions/setup-python@v2
+              with:
+                  python-version: '3.7.8'
+            - name: Update
+              run: "python3 -m pip install --upgrade pip setuptools wheel"
+            - name: Update submodule
+              run: "git submodule update --init"
+            - name: Install intermine_boot
+              run: "python3 -m pip install --editable ."
+              
+            - name: Run intermine boot command
+              run: "intermine_boot start local --build-im --im-branch bluegenes --build-images"
+            - name: Check if intermine loaded
+              run: "curl localhost:9999/biotestmine/begin.do"
+            - name: Stop intermine
+              run: "intermine_boot stop local"
+              
