@@ -55,7 +55,7 @@ def _get_container_path():
     '''
     Returns the path to docker-intermine-gradle submodule.
     '''
-    return Path(__file__).parent.parent.absolute() / 'docker-intermine-gradle'
+    return Path(__file__).parent.absolute() / 'docker-intermine-gradle'
 
 def _create_volumes(env, options):
     data_dir = env['data_dir'] / 'docker' / 'data'
@@ -244,7 +244,7 @@ def create_intermine_builder_container(client, image, env, options):
         'MEM_OPTS': os.environ.get('MEM_OPTS', '-Xmx2g -Xms1g'),
         'IM_DATA_DIR': os.environ.get('IM_DATA_DIR', ''),
         'FORCE_MINE_BUILD': 'true' if (
-               options['datapath_im'] and not _is_conf_same(env['data_dir', options])
+               options['datapath_im'] and not _is_conf_same(env['data_dir'], options)
             ) else 'false'
     }
 
