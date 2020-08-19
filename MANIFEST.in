@@ -1,4 +1,4 @@
-recursive-include docker-intermine-gradle/intermine_builder *
-recursive-include docker-intermine-gradle/postgres *
-recursive-include docker-intermine-gradle/solr *
-recursive-include docker-intermine-gradle/tomcat *
+recursive-include intermine_boot/docker-intermine-gradle/intermine_builder *
+recursive-include intermine_boot/docker-intermine-gradle/postgres *
+recursive-include intermine_boot/docker-intermine-gradle/solr *
+recursive-include intermine_boot/docker-intermine-gradle/tomcat *
