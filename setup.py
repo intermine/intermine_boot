@@ -7,16 +7,6 @@ setup(
     python_requires='>=3.5',
     packages=find_packages(),
     include_package_data=True,
-    package_data={
-        'intermine_boot': [
-            'docker-intermine-gradle/intermine_builder/*',
-            'docker-intermine-gradle/tomcat/*',
-            'docker-intermine-gradle/tomcat/configs/*',
-            'docker-intermine-gradle/postgres/*',
-            'docker-intermine-gradle/solr/*',
-            'docker-intermine-gradle/solr/scripts/*'
-        ]
-    },
     install_requires=[
         'Click',
         'gitpython',
