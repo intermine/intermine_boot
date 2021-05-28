@@ -7,6 +7,7 @@ import os
 from git import Repo,cmd
 import yaml
 from intermine_boot import utils
+import click
 
 # all docker containers created would be attached to this network
 DOCKER_NETWORK_NAME = 'intermine_boot'
@@ -318,7 +319,7 @@ def _start_container(
             volumes=volumes, network=network, detach=True, ports=ports)
 
         for log in container.logs(stream=True, timestamps=True):
-            print (log.decode())
+            click.echo(log.decode(), nl=False)
             if log_match is not None and log_match in str(log):
                 break
             if 'ERROR' in str(log):
