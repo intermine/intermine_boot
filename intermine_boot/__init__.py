@@ -25,8 +25,17 @@ TARGET_OPTIONS = ['local']
 @click.option('--rebuild', is_flag=True, default=False, help='Rebuild your mine from scratch even if it already exists.')
 @click.option('--datapath-im', default=None, help='Path of the mine folder.')
 def cli(**options):
-    """Here will be a description of this script.
-    Remember to also document modes and targets.
+    """Spin up containers for building and running an InterMine server.
+
+Modes:
+
+start - Start containers for building an InterMine. Once finished, the server will continue running until stopped. Defaults to Biotestmine, and will reuse data from a previously built mine if identical.
+
+stop - Stop and remove any running containers used to build and run an InterMine.
+
+Targets:
+
+local - Use the local docker daemon as host for the containers.
     """
 
     data_dir = XDG_DATA_HOME / 'intermine_boot'
