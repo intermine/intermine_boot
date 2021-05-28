@@ -2,6 +2,7 @@ import boto3
 from git import Repo,cmd
 from botocore.exceptions import ClientError
 import os
+import click
 
 def _get_compose_path(options, env):
     work_dir = env['data_dir'] / 'docker'
@@ -16,9 +17,9 @@ def _get_aws_env_vars_or_exit():
         AWS_SECRET_KEY = os.environ['AWS_SECRET_KEY']
         AWS_BUCKET_NAME = os.environ['AWS_BUCKET_NAME']
     except KeyError:
-        print ('Environment Variables for AWS storage not found.' +
+        click.echo('Environment Variables for AWS storage not found.' +
             'Make sure AWS_ACCESS_KEY, AWS_SECRET_KEY and AWS_BUCKET_NAME are set.' +
-            'Exiting...')
+            'Exiting...', err=True)
         exit(1)
     return (AWS_ACCESS_KEY, AWS_SECRET_KEY, AWS_BUCKET_NAME)
 
@@ -48,14 +49,14 @@ def upload_archives(options, env, method):
     if method == 's3':
         upload_archives_aws(options, env)
     else:
-        print ('Method not implemented')
+        click.echo('Method not implemented')
         raise (NotImplementedError)
 
 def download_archives(options, env, method):
     if method == 's3':
         download_archives_aws(options, env)
     else:
-        print ('Method not implemented')
+        click.echo('Method not implemented')
         raise (NotImplementedError)
 
 def upload_archives_aws(options, env):
@@ -77,7 +78,7 @@ def upload_archives_aws(options, env):
         s3.upload_file(str(solr_archive_path), bucket, str(version+'solr.zip'))
         s3.upload_file(str(mine_archive_path), bucket, str(version+'biotestmine.zip'))
     except ClientError as error:
-        print(error)
+        click.echo(error, err=True)
 
 def download_archives_aws(options, env):
     (access_key, secret_key, bucket_name) = _get_aws_env_vars_or_exit()
@@ -99,7 +100,7 @@ def download_archives_aws(options, env):
         s3.download_file(bucket, str(version+'solr.zip'), str(data_dir / str('solr.zip')))
         s3.download_file(bucket, str(version+'biotestmine.zip'), str(data_dir / str('mine.zip')))
     except ClientError as error:
-        print(error)
+        click.echo(error, err=True)
 
     # unzip
     shutil.unpack_archive(str(data_dir / str('postgres.zip')), str(postgres_data_dir), 'zip')

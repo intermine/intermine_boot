@@ -87,10 +87,10 @@ def up(options, env):
     same_conf_exist = False
     if (env['data_dir'] / 'docker').is_dir():
         if _is_conf_same(env['data_dir'], options):
-            print ('Same configuration exist. Using existing data...')
+            click.echo('Same configuration exists. Using existing data...')
             same_conf_exist = True
         else:
-            print ('Configuration change detected. Removing existing data if any...')
+            click.echo('Configuration change detected. Removing existing data if any...')
             shutil.rmtree(env['data_dir'])
 
     if not same_conf_exist:
@@ -99,7 +99,7 @@ def up(options, env):
     _create_volumes(env, options)
 
     if options['datapath_im']:
-        print ('data path is ' + options['datapath_im'])
+        click.echo('data path is ' + options['datapath_im'])
         shutil.copytree(
             Path(
                 options['datapath_im']),
@@ -108,7 +108,7 @@ def up(options, env):
 
     client = docker.from_env()
     if options['build_images']:
-        print ('Building images...')
+        click.echo('Building images...')
         img_path = _get_container_path()
         tomcat_image = client.images.build(
             path=str(img_path / 'tomcat'), tag='tomcat', dockerfile='tomcat.Dockerfile')[0]
@@ -119,14 +119,14 @@ def up(options, env):
         intermine_builder_image = client.images.build(
             path=str(img_path / 'intermine_builder'), tag='builder', dockerfile='intermine_builder.Dockerfile')[0]
     else:
-        print ('Pulling images...')
+        click.echo('Pulling images...')
         tomcat_image = client.images.pull('intermine/tomcat:latest')
         solr_image = client.images.pull('intermine/solr:latest')
         postgres_image = client.images.pull('intermine/postgres:latest')
         intermine_builder_image = client.images.pull('intermine/builder:latest')
 
     docker_network = _create_network_if_not_exist(client)
-    print ('Starting containers...')
+    click.echo('Starting containers...')
     (tomcat, tomcat_status) = create_tomcat_container(client, tomcat_image)
     (solr, solr_status) = create_solr_container(client, solr_image, env, options)
     (postgres, postgres_status) = create_postgres_container(client, postgres_image, env)
@@ -184,7 +184,7 @@ def create_tomcat_container(client, image):
         os.environ.get('TOMCAT_PORT', 8080): os.environ.get('TOMCAT_HOST_PORT', 9999)
     }
 
-    print ('\n\nStarting Tomcat container...\n')
+    click.echo('\n\nStarting Tomcat container...\n')
     tomcat_container = _start_container(
         client, image, name='tomcat', environment=envs, ports=ports,
         network=DOCKER_NETWORK_NAME, log_match='Server startup')
@@ -208,7 +208,7 @@ def create_solr_container(client, image, env, options):
         }
     }
 
-    print('\n\nStarting Solr container...\n')
+    click.echo('\n\nStarting Solr container...\n')
     solr_container = _start_container(
         client, image, name='solr', environment=envs, user=user, volumes=volumes,
         network=DOCKER_NETWORK_NAME, log_match='Registered new searcher')
@@ -226,7 +226,7 @@ def create_postgres_container(client, image, env):
         }
     }
 
-    print ('\n\nStarting Postgres container...\n')
+    click.echo('\n\nStarting Postgres container...\n')
     postgres_container = _start_container(
         client, image, name='postgres', user=user, volumes=volumes,
         network=DOCKER_NETWORK_NAME, log_match='autovacuum launcher started')
@@ -283,24 +283,24 @@ def create_intermine_builder_container(client, image, env, options):
         }
     }
 
-    print ('\n\nStarting Intermine container...\n\n')
+    click.echo('\n\nStarting Intermine container...\n\n')
 
     try:
         assert client.containers.get('postgres').status == 'running'
     except AssertionError:
-        print ('Postgres container not running. Exiting...')
+        click.echo('Postgres container not running. Exiting...', err=True)
         exit(1)
 
     try:
         assert client.containers.get('tomcat').status == 'running'
     except AssertionError:
-        print ('Tomcat container not running. Exiting...')
+        click.echo('Tomcat container not running. Exiting...', err=True)
         exit(1)
 
     try:
         assert client.containers.get('solr').status == 'running'
     except AssertionError:
-        print ('Solr container not running. Exiting...')
+        click.echo('Solr container not running. Exiting...', err=True)
 
     intermine_builder_container = _start_container(
         client, image, name='intermine_builder', user=user, environment=environment,
@@ -325,10 +325,10 @@ def _start_container(
             if 'ERROR' in str(log):
                 status_code = False
     except docker.errors.ImageNotFound as e:
-        print ('docker image not found for %s ' % container_name, e.msg)
+        click.echo('docker image not found for %s: %s' % (container_name, e.msg), err=True)
         exit(1)
     except docker.errors.ContainerError as e:
-        print ('Error while running container ', e.msg)
+        click.echo('Error while running container: %s' % e.msg, err=True)
         exit(1)
 
     return (container, status_code)
