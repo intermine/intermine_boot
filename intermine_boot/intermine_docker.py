@@ -86,7 +86,10 @@ def _create_network_if_not_exist(client):
 def up(options, env):
     same_conf_exist = False
     if (env['data_dir'] / 'docker').is_dir():
-        if _is_conf_same(env['data_dir'], options):
+        if options['rebuild']:
+            click.echo('Forced rebuild. Removing existing data if any...')
+            shutil.rmtree(env['data_dir'])
+        elif _is_conf_same(env['data_dir'], options):
             click.echo('Same configuration exists. Using existing data...')
             same_conf_exist = True
         else:
