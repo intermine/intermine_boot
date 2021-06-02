@@ -1,4 +1,4 @@
-[![Tests](https://github.com/intermine/intermine_boot/actions/workflows/tests/badge.svg?branch=master)](https://github.com/intermine/intermine_boot/actions?query=workflow%3A%22tests%22)
+[![Tests](https://github.com/intermine/intermine_boot/workflows/tests/badge.svg?branch=master)](https://github.com/intermine/intermine_boot/actions?query=workflow%3A%22tests%22)
 
 # intermine_boot
 
