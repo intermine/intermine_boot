@@ -1,9 +1,12 @@
-name: "Work flow to run tests for intermine boot"
-on: push
+name: tests
+
+on:
+  push:
+  pull_request:
 
 jobs:
     test1:
-        name: Test intermine_boot start local
+        name: Standard run
         runs-on: ubuntu-18.04
         steps:
             - uses: actions/checkout@v2
@@ -22,12 +25,9 @@ jobs:
               run: "curl localhost:9999/biotestmine/begin.do"
             - name: Stop intermine
               run: "intermine_boot stop local"
-  
-              
 
     test2:
-        name: Test intermine_boot start local --build-images
-
+        name: Build docker images
         runs-on: ubuntu-18.04
         steps:
             - uses: actions/checkout@v2
@@ -50,8 +50,7 @@ jobs:
               run: "intermine_boot stop local"
 
     test3:
-        name: Test intermine_boot start local --build-im --im-branch bluegenes --build-images
-
+        name: Build InterMine
         runs-on: ubuntu-18.04
         steps:
             - uses: actions/checkout@v2
@@ -61,15 +60,12 @@ jobs:
                   python-version: '3.7.8'
             - name: Update
               run: "python3 -m pip install --upgrade pip setuptools wheel"
-            - name: Update submodule
-              run: "git submodule update --init"
             - name: Install intermine_boot
               run: "python3 -m pip install --editable ."
               
             - name: Run intermine boot command
-              run: "intermine_boot start local --build-im --im-branch bluegenes --build-images"
+              run: "intermine_boot start local --build-im"
             - name: Check if intermine loaded
               run: "curl localhost:9999/biotestmine/begin.do"
             - name: Stop intermine
               run: "intermine_boot stop local"
-              
