@@ -45,7 +45,11 @@ def stop(options, env):
 
 def build(options, env):
     assert_docker(options, env)
-    intermine_docker.up(options, env)
+    status = intermine_docker.up(options, env)
+    if not status:
+        click.echo('Build unsuccessful. Please check error logs.')
+        intermine_docker.down(options, env)
+
     intermine_docker.down(options, env)
     intermine_docker.create_archives(options, env)
 
