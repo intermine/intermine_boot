@@ -59,7 +59,7 @@ def _get_container_path():
     return Path(__file__).parent.absolute() / 'docker-intermine-gradle'
 
 def _create_volumes(env, options):
-    data_dir = env['data_dir'] / 'docker' / 'data'
+    data_dir = env['data_dir'] / 'data'
     # make dirs if not exist
     Path(data_dir).mkdir(exist_ok=True)
     Path(data_dir / 'solr').mkdir(exist_ok=True)
@@ -85,7 +85,7 @@ def _create_network_if_not_exist(client):
 
 def up(options, env):
     same_conf_exist = False
-    if (env['data_dir'] / 'docker').is_dir():
+    if (env['data_dir']).is_dir():
         if options['rebuild']:
             click.echo('Forced rebuild. Removing existing data if any...')
             shutil.rmtree(env['data_dir'])
@@ -97,7 +97,7 @@ def up(options, env):
             shutil.rmtree(env['data_dir'])
 
     if not same_conf_exist:
-        (env['data_dir'] / 'docker/').mkdir(parents=True, exist_ok=True)
+        (env['data_dir']).mkdir(parents=True, exist_ok=True)
 
     _create_volumes(env, options)
 
@@ -106,7 +106,7 @@ def up(options, env):
         shutil.copytree(
             Path(
                 options['datapath_im']),
-                env['data_dir'] / 'docker' / 'data' / 'mine' / _get_mine_name(options),
+                env['data_dir'] / 'data' / 'mine' / _get_mine_name(options),
                 dirs_exist_ok=True)
 
     client = docker.from_env()
@@ -203,7 +203,7 @@ def create_solr_container(client, image, env, options):
 
     user = _get_docker_user()
 
-    data_dir = env['data_dir'] / 'docker' / 'data' / 'solr'
+    data_dir = env['data_dir'] / 'data' / 'solr'
     volumes = {
         data_dir: {
             'bind': '/var/solr',
@@ -221,7 +221,7 @@ def create_solr_container(client, image, env, options):
 
 def create_postgres_container(client, image, env):
     user = _get_docker_user()
-    data_dir = env['data_dir'] / 'docker' / 'data' / 'postgres'
+    data_dir = env['data_dir'] / 'data' / 'postgres'
     volumes = {
         data_dir : {
             'bind': '/var/lib/postgresql/data',
@@ -240,7 +240,7 @@ def create_postgres_container(client, image, env):
 def create_intermine_builder_container(client, image, env, options):
     user = _get_docker_user()
 
-    data_dir = env['data_dir'] / 'docker' / 'data'
+    data_dir = env['data_dir'] / 'data'
 
     environment = {
         'MINE_NAME': _get_mine_name(options),
@@ -260,7 +260,7 @@ def create_intermine_builder_container(client, image, env, options):
         environment['IM_REPO_BRANCH'] = (
             IM_REPO_BRANCH if IM_REPO_BRANCH != '' else options['im_branch'])
 
-    mine_path = env['data_dir'] / 'docker' / 'data' / 'mine'
+    mine_path = env['data_dir'] / 'data' / 'mine'
 
     volumes = {
         mine_path / 'dump': {
