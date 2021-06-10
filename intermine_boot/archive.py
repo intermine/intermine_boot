@@ -10,8 +10,8 @@ def _get_aws_env_vars_or_exit():
         AWS_SECRET_KEY = os.environ['AWS_SECRET_KEY']
         AWS_BUCKET_NAME = os.environ['AWS_BUCKET_NAME']
     except KeyError:
-        click.echo('Environment Variables for AWS storage not found.' +
-            'Make sure AWS_ACCESS_KEY, AWS_SECRET_KEY and AWS_BUCKET_NAME are set.' +
+        click.echo('Environment Variables for AWS storage not found. ' +
+            'Make sure AWS_ACCESS_KEY, AWS_SECRET_KEY and AWS_BUCKET_NAME are set. ' +
             'Exiting...', err=True)
         exit(1)
     return (AWS_ACCESS_KEY, AWS_SECRET_KEY, AWS_BUCKET_NAME)
