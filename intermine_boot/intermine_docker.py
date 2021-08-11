@@ -25,8 +25,8 @@ def _is_conf_same(path_to_config, options):
     try:
         if (config['branch_name'] == options['im_branch']) and (
                 config['repo_name'] == options['im_repo']):
-            if options['datapath_im']:
-                return config['datapath_im'] == options['datapath_im']
+            if options['source']:
+                return config['source'] == options['source']
             return True
         else:
             return False
@@ -38,8 +38,8 @@ def _store_conf(path_to_config, options):
     config = {}
     config['branch_name'] = options['im_branch']
     config['repo_name'] = options['im_repo']
-    if options['datapath_im']:
-        config['datapath_im'] = options['datapath_im']
+    if options['source']:
+        config['source'] = options['source']
 
     f = open(path_to_config / '.config', 'wb')
     pkl.dump(config, f)
@@ -47,8 +47,8 @@ def _store_conf(path_to_config, options):
 
 
 def _get_mine_name(options):
-    if options['datapath_im']:
-        return options['datapath_im'].strip('/').split('/')[-1]
+    if options['source']:
+        return os.path.basename(os.path.abspath(options['source']))
     else:
         return os.environ.get('MINE_NAME', 'biotestmine')
 
@@ -102,11 +102,11 @@ def up(options, env):
 
     _create_volumes(env, options)
 
-    if options['datapath_im']:
-        click.echo('data path is ' + options['datapath_im'])
+    if options['source']:
+        click.echo('Source path is ' + os.path.abspath(options['source']))
         shutil.copytree(
             Path(
-                options['datapath_im']),
+                options['source']),
                 env['data_dir'] / 'data' / 'mine' / _get_mine_name(options),
                 dirs_exist_ok=True)
 
@@ -274,7 +274,7 @@ def create_intermine_builder_container(client, image, env, options):
         'MEM_OPTS': os.environ.get('MEM_OPTS', '-Xmx2g -Xms1g'),
         'IM_DATA_DIR': os.environ.get('IM_DATA_DIR', ''),
         'FORCE_MINE_BUILD': 'true' if (
-               options['datapath_im'] and not _is_conf_same(env['data_dir'], options)
+               options['source'] and not _is_conf_same(env['data_dir'], options)
             ) else 'false'
     }
 
