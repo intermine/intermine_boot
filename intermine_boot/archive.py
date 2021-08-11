@@ -3,6 +3,7 @@ from git import Repo,cmd
 from botocore.exceptions import ClientError
 import os
 import click
+import shutil
 
 def _get_aws_env_vars_or_exit():
     try:

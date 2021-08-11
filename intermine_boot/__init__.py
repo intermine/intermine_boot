@@ -34,6 +34,10 @@ start - Start containers for building an InterMine using SOURCE. Once finished, 
 
 stop - Stop and remove any running containers used to build and run an InterMine.
 
+build - Start containers for building an InterMine using SOURCE. Once finished, the containers will be removed and an archive will be created from the built mine. Defaults to Biotestmine if SOURCE is not specified, and will reuse data from a previously built mine if identical.
+
+load - Start containers to run a previously built InterMine saved to an archive SOURCE. The server will continue running until stopped.
+
 Targets:
 
 local - Use the local docker daemon as host for the containers.
@@ -45,4 +49,5 @@ local - Use the local docker daemon as host for the containers.
         'cwd': pathlib.Path.cwd()
     }
 
+    # options and env specify the invocation state and should not be mutated!
     commands.invoke(options['mode'], options, env)

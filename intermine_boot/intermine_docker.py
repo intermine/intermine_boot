@@ -9,6 +9,8 @@ import yaml
 from intermine_boot import utils
 import click
 import re
+import glob
+import sys
 
 # all docker containers created would be attached to this network
 DOCKER_NETWORK_NAME = 'intermine_boot'
@@ -16,6 +18,7 @@ DOCKER_NETWORK_NAME = 'intermine_boot'
 def _get_docker_user():
     return str(os.getuid()) + ':' + str(os.getgid())
 
+# TODO configs when intermine_builder gets rewritten?
 def _is_conf_same(path_to_config, options):
     conf_file_path = str(path_to_config) + '/.config'
     if not os.path.isfile(conf_file_path):
@@ -45,10 +48,22 @@ def _store_conf(path_to_config, options):
     pkl.dump(config, f)
     return
 
-
-def _get_mine_name(options):
-    if options['source']:
+def _get_mine_name(options, env):
+    if options['mode'] in ['start', 'build'] and options['source']:
         return os.path.basename(os.path.abspath(options['source']))
+    elif options['source']: # Likely path to an archive.
+        prop_files = glob.glob(str(env['data_dir'] / 'data' / 'mine' / 'intermine' / '*.properties'))
+        try:
+            mine_name = os.path.basename(prop_files[0]).replace('.properties', '')
+        except IndexError:
+            mine_name = ''
+
+        if not mine_name:
+            click.echo('Failed to determine name of mine from ' + options['source'], err=True)
+            click.echo('The archive is likely not supported', err=True)
+            sys.exit(1)
+
+        return mine_name
     else:
         return os.environ.get('MINE_NAME', 'biotestmine')
 
@@ -59,7 +74,7 @@ def _get_container_path():
     '''
     return Path(__file__).parent.absolute() / 'docker-intermine-gradle'
 
-def _create_volumes(env, options):
+def _create_volumes(options, env):
     data_dir = env['data_dir'] / 'data'
     # make dirs if not exist
     Path(data_dir).mkdir(exist_ok=True)
@@ -70,7 +85,7 @@ def _create_volumes(env, options):
     Path(data_dir / 'mine' / 'configs').mkdir(exist_ok=True)
     Path(data_dir / 'mine' / 'packages').mkdir(exist_ok=True)
     Path(data_dir / 'mine' / 'intermine').mkdir(exist_ok=True)
-    Path(data_dir / 'mine' / _get_mine_name(options)).mkdir(exist_ok=True)
+    Path(data_dir / 'mine' / _get_mine_name(options, env)).mkdir(exist_ok=True)
     Path(data_dir / 'mine' / '.intermine').mkdir(exist_ok=True)
     Path(data_dir / 'mine' / '.m2').mkdir(exist_ok=True)
 
@@ -84,31 +99,32 @@ def _create_network_if_not_exist(client):
     return network
 
 
-def up(options, env):
-    same_conf_exist = False
+def up(options, env, reuse=False):
     if (env['data_dir']).is_dir():
         if options['rebuild']:
             click.echo('Forced rebuild. Removing existing data if any...')
             shutil.rmtree(env['data_dir'])
+        elif reuse:
+            pass
         elif _is_conf_same(env['data_dir'], options):
             click.echo('Same configuration exists. Using existing data...')
-            same_conf_exist = True
         else:
             click.echo('Configuration change detected. Removing existing data if any...')
             shutil.rmtree(env['data_dir'])
 
-    if not same_conf_exist:
-        (env['data_dir']).mkdir(parents=True, exist_ok=True)
+    (env['data_dir']).mkdir(parents=True, exist_ok=True)
 
-    _create_volumes(env, options)
+    _create_volumes(options, env)
 
-    if options['source']:
+    if options['mode'] in ['start', 'build'] and options['source']:
         click.echo('Source path is ' + os.path.abspath(options['source']))
         shutil.copytree(
             Path(
                 options['source']),
-                env['data_dir'] / 'data' / 'mine' / _get_mine_name(options),
+                env['data_dir'] / 'data' / 'mine' / _get_mine_name(options, env),
                 dirs_exist_ok=True)
+    elif not options['source']:
+        click.echo('No source path specified. Will build biotestmine.')
 
     client = docker.from_env()
     if options['build_images']:
@@ -132,10 +148,10 @@ def up(options, env):
     docker_network = _create_network_if_not_exist(client)
     click.echo('Starting containers...')
     (tomcat, tomcat_status) = create_tomcat_container(client, tomcat_image)
-    (solr, solr_status) = create_solr_container(client, solr_image, env, options)
-    (postgres, postgres_status) = create_postgres_container(client, postgres_image, env)
+    (solr, solr_status) = create_solr_container(client, solr_image, options, env)
+    (postgres, postgres_status) = create_postgres_container(client, postgres_image, options, env)
     (intermine_builder, intermine_builder_status) = create_intermine_builder_container(
-        client, intermine_builder_image, env, options)
+        client, intermine_builder_image, options, env)
 
     _store_conf(env['data_dir'], options)
 
@@ -166,7 +182,7 @@ def down(options, env):
 
 
 def create_archives(options, env):
-    properties_file = env['data_dir'] / 'data' / 'mine' /  'intermine' / (_get_mine_name(options) + '.properties')
+    properties_file = env['data_dir'] / 'data' / 'mine' /  'intermine' / (_get_mine_name(options, env) + '.properties')
 
     archive_filename = ''
     try:
@@ -221,10 +237,10 @@ def create_tomcat_container(client, image):
     return tomcat_container
 
 
-def create_solr_container(client, image, env, options):
+def create_solr_container(client, image, options, env):
     envs = {
         'MEM_OPTS': os.environ.get('MEM_OPTS', '-Xmx2g -Xms1g'),
-        'MINE_NAME': _get_mine_name(options)
+        'MINE_NAME': _get_mine_name(options, env)
     }
 
     user = _get_docker_user()
@@ -245,7 +261,7 @@ def create_solr_container(client, image, env, options):
     return solr_container
 
 
-def create_postgres_container(client, image, env):
+def create_postgres_container(client, image, options, env):
     user = _get_docker_user()
     data_dir = env['data_dir'] / 'data' / 'postgres'
     volumes = {
@@ -263,19 +279,22 @@ def create_postgres_container(client, image, env):
     return postgres_container
 
 
-def create_intermine_builder_container(client, image, env, options):
+def create_intermine_builder_container(client, image, options, env):
     user = _get_docker_user()
 
     data_dir = env['data_dir'] / 'data'
 
+    # TODO redo when intermine_builder gets rewritten?
+    # would also be a good idea to always print the options/environment passed
+    # to intermine_builder, or at least add an option to print them
     environment = {
-        'MINE_NAME': _get_mine_name(options),
+        'MINE_NAME': _get_mine_name(options, env),
         'MINE_REPO_URL': os.environ.get('MINE_REPO_URL', ''),
         'MEM_OPTS': os.environ.get('MEM_OPTS', '-Xmx2g -Xms1g'),
         'IM_DATA_DIR': os.environ.get('IM_DATA_DIR', ''),
         'FORCE_MINE_BUILD': 'true' if (
-               options['source'] and not _is_conf_same(env['data_dir'], options)
-            ) else 'false'
+               options['mode'] in ['start', 'build'] and options['source'] and not _is_conf_same(env['data_dir'], options)
+            ) else '' # 'false' is truthy while empty is falsey
     }
 
     if options['build_im']:
@@ -287,6 +306,14 @@ def create_intermine_builder_container(client, image, env, options):
             IM_REPO_BRANCH if IM_REPO_BRANCH != '' else options['im_branch'])
 
     mine_path = env['data_dir'] / 'data' / 'mine'
+    mine_name = _get_mine_name(options, env)
+
+    # If we unpacked from a zip archive, these files could have lost their executable bit.
+    for executable in ['gradlew', 'project_build', 'setup.sh']:
+        try:
+            os.chmod(mine_path / mine_name / executable, 0o775)
+        except FileNotFoundError:
+            pass
 
     volumes = {
         mine_path / 'dump': {
@@ -306,8 +333,8 @@ def create_intermine_builder_container(client, image, env, options):
             'bind': '/home/intermine/.intermine',
             'mode': 'rw'
         },
-        mine_path / _get_mine_name(options): {
-            'bind': '/home/intermine/intermine/' + _get_mine_name(options),
+        mine_path / mine_name: {
+            'bind': '/home/intermine/intermine/' + mine_name,
             'mode': 'rw'
         }
     }
