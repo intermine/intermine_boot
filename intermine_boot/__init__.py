@@ -38,6 +38,8 @@ build - Start containers for building an InterMine using SOURCE. Once finished, 
 
 load - Start containers to run a previously built InterMine saved to an archive SOURCE. The server will continue running until stopped.
 
+clean - Remove all local data saved by this tool.
+
 Targets:
 
 local - Use the local docker daemon as host for the containers.

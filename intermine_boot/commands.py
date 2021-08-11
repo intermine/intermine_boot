@@ -96,6 +96,11 @@ def load(options, env):
         click.echo('Build unsuccessful. Please check error logs.')
         intermine_docker.down(options, env)
 
+def clean(options, env):
+    if env['data_dir'].is_dir():
+        click.echo('Cleaning intermine_boot data')
+        shutil.rmtree(env['data_dir'])
+
 def _not_implemented(options, env):
     click.echo('This mode has not been implemented yet.')
     sys.exit(1)
@@ -105,7 +110,8 @@ def invoke(mode, options, env):
         'start': start,
         'stop': stop,
         'build': build,
-        'load': load
+        'load': load,
+        'clean': clean
     }
 
     func = modes.get(mode, _not_implemented)
