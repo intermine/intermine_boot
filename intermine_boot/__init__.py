@@ -1,6 +1,7 @@
 import subprocess
 import sys
 import re
+import os
 import click
 from xdg import (XDG_DATA_HOME)
 from intermine_boot import commands
@@ -40,7 +41,8 @@ local - Use the local docker daemon as host for the containers.
 
     data_dir = XDG_DATA_HOME / 'intermine_boot'
     env = {
-        'data_dir': data_dir
+        'data_dir': data_dir,
+        'cwd': pathlib.Path.cwd()
     }
 
     commands.invoke(options['mode'], options, env)

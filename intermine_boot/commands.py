@@ -46,17 +46,15 @@ def stop(options, env):
 def build(options, env):
     assert_docker(options, env)
     status = intermine_docker.up(options, env)
-    if not status:
+    if status:
+        intermine_docker.down(options, env)
+        intermine_docker.create_archives(options, env)
+        # upload and download of files is possible only if you have valid access keys
+        #archive.upload_archives(options, env, 's3')
+        #docker.download_archives(options, env, 's3')
+    else:
         click.echo('Build unsuccessful. Please check error logs.')
         intermine_docker.down(options, env)
-
-    intermine_docker.down(options, env)
-    intermine_docker.create_archives(options, env)
-
-    # upload and download of files is possible only if you have valid access keys
-    archive.upload_archives(options, env, 's3')
-    # docker.download_archives(options, env, 's3')
-
 
 def _not_implemented(options, env):
     click.echo('This mode has not been implemented yet.')

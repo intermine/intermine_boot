@@ -8,6 +8,7 @@ from git import Repo,cmd
 import yaml
 from intermine_boot import utils
 import click
+import re
 
 # all docker containers created would be attached to this network
 DOCKER_NETWORK_NAME = 'intermine_boot'
@@ -165,18 +166,43 @@ def down(options, env):
 
 
 def create_archives(options, env):
-    postgres_archive = env['data_dir'] / 'postgres'
-    postgres_data_dir = env['data_dir'] / 'data' / 'postgres'
-    shutil.make_archive(postgres_archive, 'zip', root_dir=postgres_data_dir)
+    properties_file = env['data_dir'] / 'data' / 'mine' /  'intermine' / (_get_mine_name(options) + '.properties')
 
-    solr_archive = env['data_dir'] / 'solr'
-    solr_data_dir = env['data_dir'] / 'data' / 'solr'
-    shutil.make_archive(solr_archive, 'zip', root_dir=solr_data_dir)
+    archive_filename = ''
+    try:
+        title = ''
+        version = ''
+        with open(properties_file) as props:
+            title_re = re.compile("^project\\.title=(.+)$")
+            version_re = re.compile("^project\\.releaseVersion=(.+)$")
 
-    mine_archive = env['data_dir'] / _get_mine_name(options)
-    mine_data_dir = env['data_dir'] / 'data' / 'mine' / _get_mine_name(options)
-    shutil.make_archive(mine_archive, 'zip', root_dir=mine_data_dir)
+            for _, line in enumerate(props):
+                if not title:
+                    match_title = re.match(title_re, line)
+                    if match_title:
+                        title = match_title.group(1)
 
+                if not version:
+                    match_version = re.match(version_re, line)
+                    if match_version:
+                        version = match_version.group(1)
+
+                if title and version:
+                    break
+
+            if title:
+                archive_filename = title
+                if version:
+                    archive_filename += '-' + version
+
+    except EnvironmentError:
+        archive_filename = 'mine'
+
+    archive = env['cwd'] / archive_filename
+    target_dir = env['data_dir'] / 'data'
+    created_archive = shutil.make_archive(archive, 'zip', root_dir=target_dir)
+
+    click.echo('\n\nCreated archive ' + created_archive)
 
 def create_tomcat_container(client, image):
     envs = {
