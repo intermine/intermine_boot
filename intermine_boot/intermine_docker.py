@@ -357,6 +357,7 @@ def create_intermine_builder_container(client, image, options, env):
         assert client.containers.get('solr').status == 'running'
     except AssertionError:
         click.echo('Solr container not running. Exiting...', err=True)
+        exit(1)
 
     intermine_builder_container = _start_container(
         client, image, name='intermine_builder', user=user, environment=environment,
