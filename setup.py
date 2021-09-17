@@ -12,6 +12,7 @@ setup(
         'gitpython',
         'xdg',
         'pyyaml',
+        'pydantic',
         'boto3',
         'docker'
     ],

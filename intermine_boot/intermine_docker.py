@@ -170,9 +170,9 @@ def _remove_container(client, container_name):
 
 def down(options, env):
     client = docker.from_env()
-    _remove_container(client, 'tomcat')
-    _remove_container(client, 'postgres')
-    _remove_container(client, 'solr')
+    _remove_container(client, 'intermine_tomcat')
+    _remove_container(client, 'intermine_postgres')
+    _remove_container(client, 'intermine_solr')
     _remove_container(client, 'intermine_builder')
 
     try:
@@ -231,16 +231,16 @@ def create_tomcat_container(client, image):
 
     click.echo('\n\nStarting Tomcat container...\n')
     tomcat_container = _start_container(
-        client, image, name='tomcat', environment=envs, ports=ports,
+        client, image, name='intermine_tomcat', environment=envs, ports=ports,
         network=DOCKER_NETWORK_NAME, log_match='Server startup')
 
     return tomcat_container
 
 
-def create_solr_container(client, image, options, env):
+def create_solr_container(client, image, options, env, mine_name=None, network_name=None):
     envs = {
         'MEM_OPTS': os.environ.get('MEM_OPTS', '-Xmx2g -Xms1g'),
-        'MINE_NAME': _get_mine_name(options, env)
+        'MINE_NAME': mine_name or _get_mine_name(options, env)
     }
 
     user = _get_docker_user()
@@ -255,13 +255,13 @@ def create_solr_container(client, image, options, env):
 
     click.echo('\n\nStarting Solr container...\n')
     solr_container = _start_container(
-        client, image, name='solr', environment=envs, user=user, volumes=volumes,
-        network=DOCKER_NETWORK_NAME, log_match='Registered new searcher')
+        client, image, name='intermine_solr', environment=envs, user=user, volumes=volumes,
+        network=network_name or DOCKER_NETWORK_NAME, log_match='Registered new searcher')
 
     return solr_container
 
 
-def create_postgres_container(client, image, options, env):
+def create_postgres_container(client, image, options, env, network_name=None):
     user = _get_docker_user()
     data_dir = env['data_dir'] / 'data' / 'postgres'
     volumes = {
@@ -273,8 +273,8 @@ def create_postgres_container(client, image, options, env):
 
     click.echo('\n\nStarting Postgres container...\n')
     postgres_container = _start_container(
-        client, image, name='postgres', user=user, volumes=volumes,
-        network=DOCKER_NETWORK_NAME, log_match='autovacuum launcher started')
+        client, image, name='intermine_postgres', user=user, volumes=volumes,
+        network=network_name or DOCKER_NETWORK_NAME, log_match='autovacuum launcher started')
 
     return postgres_container
 
@@ -342,19 +342,19 @@ def create_intermine_builder_container(client, image, options, env):
     click.echo('\n\nStarting Intermine container...\n\n')
 
     try:
-        assert client.containers.get('postgres').status == 'running'
+        assert client.containers.get('intermine_postgres').status == 'running'
     except AssertionError:
         click.echo('Postgres container not running. Exiting...', err=True)
         exit(1)
 
     try:
-        assert client.containers.get('tomcat').status == 'running'
+        assert client.containers.get('intermine_tomcat').status == 'running'
     except AssertionError:
         click.echo('Tomcat container not running. Exiting...', err=True)
         exit(1)
 
     try:
-        assert client.containers.get('solr').status == 'running'
+        assert client.containers.get('intermine_solr').status == 'running'
     except AssertionError:
         click.echo('Solr container not running. Exiting...', err=True)
         exit(1)

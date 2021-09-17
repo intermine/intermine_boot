@@ -1,0 +1,26 @@
+{
+  "preset": "BioTestMine-tutorial",
+  "mine": "biotestmine",
+  "properties": {
+    "project.title": "MyTestMine",
+    "project.subTitle": "My example mine with data from <i>Plasmodium falciparum</i>",
+    "superuser.account": "my_user@mail_account",
+    "superuser.initialPassword": "mysecret"
+  },
+  "datasources": [
+    {
+      "name": "isa",
+      "type": "isa",
+      "properties": [
+        {
+          "name": "src.data.dir",
+          "location": "/data/isa"
+        },
+        {
+          "name": "src.data.dir.includes",
+          "value": "*.json"
+        }
+      ]
+    }
+  ]
+}
