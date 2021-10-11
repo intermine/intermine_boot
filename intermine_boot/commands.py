@@ -5,30 +5,8 @@ import click
 import shutil
 import os
 from intermine_boot import intermine_docker
-from intermine_boot import archive
-
-def assert_docker(options, env):
-    docker_info = subprocess.run(['docker', 'info'],
-                                 stdout=subprocess.PIPE,
-                                 stderr=subprocess.PIPE)
-
-    if docker_info.returncode != 0:
-        out = docker_info.stdout.decode('utf-8')
-
-        permission_denied = re.search(r'permission denied', out, re.IGNORECASE)
-        cannot_connect = re.search(r'cannot connect', out, re.IGNORECASE)
-
-        if permission_denied:
-            click.echo('You do not have permission to access the docker daemon.', err=True)
-            click.echo('Please run `sudo groupadd docker` followed by `sudo usermod -aG docker $USER`, then log out and log back in. See https://docs.docker.com/install/linux/linux-postinstall/ for more information.')
-            sys.exit(1)
-        elif cannot_connect:
-            click.echo('You don\'t seem to have a running docker daemon.', err=True)
-            click.echo('See https://docs.docker.com/install/ for instructions on installing the Docker Engine. If you\'re using a Linux distro, you can install docker with your package manager.')
-            sys.exit(1)
-        else:
-            click.echo(out, err=True)
-            sys.exit(docker_info.returncode)
+from intermine_boot.build import main
+from intermine_boot.utils import assert_docker
 
 
 def start(options, env):

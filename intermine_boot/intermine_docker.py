@@ -220,7 +220,7 @@ def create_archives(options, env):
 
     click.echo('\n\nCreated archive ' + created_archive)
 
-def create_tomcat_container(client, image):
+def create_tomcat_container(client, image, network_name=None):
     envs = {
         'MEM_OPTS': os.environ.get('MEM_OPTS', '-Xmx1g -Xms500m')
     }
@@ -232,7 +232,7 @@ def create_tomcat_container(client, image):
     click.echo('\n\nStarting Tomcat container...\n')
     tomcat_container = _start_container(
         client, image, name='intermine_tomcat', environment=envs, ports=ports,
-        network=DOCKER_NETWORK_NAME, log_match='Server startup')
+        network=network_name or DOCKER_NETWORK_NAME, log_match='Server startup')
 
     return tomcat_container
 
@@ -261,8 +261,13 @@ def create_solr_container(client, image, options, env, mine_name=None, network_n
     return solr_container
 
 
-def create_postgres_container(client, image, options, env, network_name=None):
+def create_postgres_container(client, image, options, env, mine_name=None, network_name=None):
+    envs = {
+        'MINE_NAME': mine_name or _get_mine_name(options, env)
+    }
+
     user = _get_docker_user()
+
     data_dir = env['data_dir'] / 'data' / 'postgres'
     volumes = {
         data_dir : {
@@ -273,7 +278,7 @@ def create_postgres_container(client, image, options, env, network_name=None):
 
     click.echo('\n\nStarting Postgres container...\n')
     postgres_container = _start_container(
-        client, image, name='intermine_postgres', user=user, volumes=volumes,
+        client, image, name='intermine_postgres', environment=envs, user=user, volumes=volumes,
         network=network_name or DOCKER_NETWORK_NAME, log_match='autovacuum launcher started')
 
     return postgres_container
@@ -288,6 +293,9 @@ def create_intermine_builder_container(client, image, options, env):
     # would also be a good idea to always print the options/environment passed
     # to intermine_builder, or at least add an option to print them
     environment = {
+        'SOLR_HOST': 'intermine_solr',
+        'TOMCAT_HOST': 'intermine_tomcat',
+        'PGHOST': 'intermine_postgres',
         'MINE_NAME': _get_mine_name(options, env),
         'MINE_REPO_URL': os.environ.get('MINE_REPO_URL', ''),
         'MEM_OPTS': os.environ.get('MEM_OPTS', '-Xmx2g -Xms1g'),

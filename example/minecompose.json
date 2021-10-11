@@ -2,6 +2,7 @@
   "preset": "BioTestMine-tutorial",
   "mine": "biotestmine",
   "properties": {
+    "webapp.path": "mytestmine",
     "project.title": "MyTestMine",
     "project.subTitle": "My example mine with data from <i>Plasmodium falciparum</i>",
     "superuser.account": "my_user@mail_account",
