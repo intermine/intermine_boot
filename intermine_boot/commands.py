@@ -5,7 +5,7 @@ import click
 import shutil
 import os
 from intermine_boot import intermine_docker
-from intermine_boot.build import main
+from intermine_boot import build as intermine_build
 from intermine_boot.utils import assert_docker
 
 

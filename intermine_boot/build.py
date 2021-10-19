@@ -1,6 +1,9 @@
 from pathlib import Path
 import os
 import sys
+import shutil
+import time
+import xml.etree.ElementTree as ET
 import docker
 import click
 
@@ -34,7 +37,7 @@ def _create_volumes(options, env, mine_name):
             pass
 
 
-def main(options, env, minecompose_path):
+def _prepare(options, env, minecompose_path):
     mc = parse_minecompose(minecompose_path)
     # TODO log minecompose? (redacting sensitive data)
 
@@ -71,12 +74,53 @@ def main(options, env, minecompose_path):
         click.echo('Error occurred when starting containers', err=True)
         sys.exit(1)
 
+    return mc
+
+
+def parse_project_xml(options, env, mine_path=None, mine_name=None):
+    project_xml_path = mine_path / mine_name / "project.xml"
+
+    tree = ET.parse(project_xml_path)
+    root  = tree.getroot()
+
+    res = { 'sources': [], 'post-processing': [] }
+
+    sources_el = root.find('sources')
+    if sources_el:
+        for source in sources_el.findall('source'):
+            res['sources'].append(source.attrib['name'])
+
+    postprocessing_el = root.find('post-processing')
+    if postprocessing_el:
+        for postprocess in postprocessing_el.findall('post-process'):
+            res['post-processing'].append(postprocess.attrib['name'])
+
+    return res
+
+
+def prebuilt(options, env, minecompose_path):
+    mc = _prepare(options, env, minecompose_path)
+
+    click.echo('\n\nDeploying ' + mc.mine + ' within containers...\n')
+    try:
+        builder = MineBuilder(mc.mine, data_path=(env['data_dir'] / 'data'))
+        builder.deploy()
+    except docker.errors.ContainerError as err:
+        click.echo(str(err.stderr, 'utf-8'), err=True)
+        return False
+
+    return True
+
+
+def preset(options, env, minecompose_path):
+    mc = _prepare(options, env, minecompose_path)
+
     click.echo('\n\nBuilding ' + mc.mine + ' within containers...\n')
     try:
         builder = MineBuilder(mc.mine, data_path=(env['data_dir'] / 'data'))
         # builder.create_properties_file(mc.properties)
         builder.clean()
-        builder.build_db()
+        # builder.build_db()
 
         # TODO parse project.xml and run builder.integrate() for each data source OR use builder.project_build() to test prior to this (Q: why does `postprocess` wrap each task, but `integrate` doesn't?)
 
@@ -85,9 +129,56 @@ def main(options, env, minecompose_path):
         # TODO to support preset mine, use builder.add_data_source
         # TODO support mounting src.data.dir as volume in builder container for data sources (the user has to provide the data sources and specify the path to it; e.g. for humanmine and flymine mounting /micklem/data should be enough)
 
-        builder.post_process()  # you sure this doesn't have to be run for each?
+        # builder.post_process()  # you sure this doesn't have to be run for each?
         builder.build_user_db()
         builder.deploy()
+    except docker.errors.ContainerError as err:
+        click.echo(str(err.stderr, 'utf-8'), err=True)
+        return False
+
+    return True
+
+
+def repo(options, env, minecompose_path):
+    if (env['data_dir']).is_dir():
+        if options['rebuild']:
+            click.echo('Forced rebuild. Removing existing data if any...')
+            shutil.rmtree(env['data_dir'])
+        else:
+            click.echo('Removing existing data if any...')
+            shutil.rmtree(env['data_dir'])
+    (env['data_dir']).mkdir(parents=True, exist_ok=True)
+
+    mc = _prepare(options, env, minecompose_path)
+
+    if options['source']:
+        click.echo('Source path is ' + os.path.abspath(options['source']))
+        shutil.copytree(Path(options['source']),
+                        (env['data_dir'] / 'data' / 'mine' / mc.mine),
+                        dirs_exist_ok=True)
+    else:
+        click.echo('No source path specified. Will build biotestmine.')
+
+    click.echo('\n\nBuilding ' + mc.mine + ' within containers...\n')
+    try:
+        builder = MineBuilder(mc.mine, data_path=(env['data_dir'] / 'data'), volumes=env['volumes'])
+        builder.create_properties_file(mc.properties)
+        builder.clean()
+        builder.build_db()
+
+        # click.echo(builder.project_build())
+        project = parse_project_xml(options, env, mine_path=builder.mine_path, mine_name=mc.mine)
+        for source in project['sources']:
+            click.echo(builder.integrate(source))
+        for postprocess in project['post-processing']:
+            click.echo(builder.post_process(postprocess))
+
+        # TODO to support preset mine, use builder.add_data_source
+
+        click.echo(builder.build_user_db())
+        click.echo(builder.deploy())
+        time.sleep(60)
+        click.echo(builder.redeploy())
     except docker.errors.ContainerError as err:
         click.echo(str(err.stderr, 'utf-8'), err=True)
         return False
