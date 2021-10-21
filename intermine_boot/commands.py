@@ -5,37 +5,15 @@ import click
 import shutil
 import os
 from intermine_boot import intermine_docker
-from intermine_boot import archive
-
-def assert_docker(options, env):
-    docker_info = subprocess.run(['docker', 'info'],
-                                 stdout=subprocess.PIPE,
-                                 stderr=subprocess.PIPE)
-
-    if docker_info.returncode != 0:
-        out = docker_info.stdout.decode('utf-8')
-
-        permission_denied = re.search(r'permission denied', out, re.IGNORECASE)
-        cannot_connect = re.search(r'cannot connect', out, re.IGNORECASE)
-
-        if permission_denied:
-            click.echo('You do not have permission to access the docker daemon.', err=True)
-            click.echo('Please run `sudo groupadd docker` followed by `sudo usermod -aG docker $USER`, then log out and log back in. See https://docs.docker.com/install/linux/linux-postinstall/ for more information.')
-            sys.exit(1)
-        elif cannot_connect:
-            click.echo('You don\'t seem to have a running docker daemon.', err=True)
-            click.echo('See https://docs.docker.com/install/ for instructions on installing the Docker Engine. If you\'re using a Linux distro, you can install docker with your package manager.')
-            sys.exit(1)
-        else:
-            click.echo(out, err=True)
-            sys.exit(docker_info.returncode)
+from intermine_boot import build as intermine_build
+from intermine_boot.utils import assert_docker
 
 
 def start(options, env):
     assert_docker(options, env)
 
     try:
-        status = intermine_docker.up(options, env)
+        status = intermine_build.build_and_deploy(options, env)
     except:
         intermine_docker.down(options, env)
         raise
@@ -55,7 +33,7 @@ def build(options, env):
     assert_docker(options, env)
 
     try:
-        status = intermine_docker.up(options, env)
+        status = intermine_build.build(options, env)
     except:
         intermine_docker.down(options, env)
         raise
@@ -84,7 +62,10 @@ def load(options, env):
     shutil.unpack_archive(options['source'], env['data_dir'] / 'data')
 
     try:
-        status = intermine_docker.up(options, env, reuse=True)
+        if options['preset']:
+            status = intermine_build.deploy_preset(options, env)
+        else:
+            status = intermine_build.deploy(options, env)
     except:
         intermine_docker.down(options, env)
         raise

@@ -170,10 +170,10 @@ def _remove_container(client, container_name):
 
 def down(options, env):
     client = docker.from_env()
-    _remove_container(client, 'tomcat')
-    _remove_container(client, 'postgres')
-    _remove_container(client, 'solr')
-    _remove_container(client, 'intermine_builder')
+    _remove_container(client, 'intermine-tomcat')
+    _remove_container(client, 'intermine-postgres')
+    _remove_container(client, 'intermine-solr')
+    _remove_container(client, 'intermine-builder')
 
     try:
         client.networks.get('intermine_boot').remove()
@@ -220,7 +220,7 @@ def create_archives(options, env):
 
     click.echo('\n\nCreated archive ' + created_archive)
 
-def create_tomcat_container(client, image):
+def create_tomcat_container(client, image, network_name=None):
     envs = {
         'MEM_OPTS': os.environ.get('MEM_OPTS', '-Xmx1g -Xms500m')
     }
@@ -231,16 +231,16 @@ def create_tomcat_container(client, image):
 
     click.echo('\n\nStarting Tomcat container...\n')
     tomcat_container = _start_container(
-        client, image, name='tomcat', environment=envs, ports=ports,
-        network=DOCKER_NETWORK_NAME, log_match='Server startup')
+        client, image, name='intermine-tomcat', environment=envs, ports=ports,
+        network=network_name or DOCKER_NETWORK_NAME, log_match='Server startup')
 
     return tomcat_container
 
 
-def create_solr_container(client, image, options, env):
+def create_solr_container(client, image, options, env, mine_name=None, network_name=None):
     envs = {
         'MEM_OPTS': os.environ.get('MEM_OPTS', '-Xmx2g -Xms1g'),
-        'MINE_NAME': _get_mine_name(options, env)
+        'MINE_NAME': mine_name or _get_mine_name(options, env)
     }
 
     user = _get_docker_user()
@@ -255,14 +255,19 @@ def create_solr_container(client, image, options, env):
 
     click.echo('\n\nStarting Solr container...\n')
     solr_container = _start_container(
-        client, image, name='solr', environment=envs, user=user, volumes=volumes,
-        network=DOCKER_NETWORK_NAME, log_match='Registered new searcher')
+        client, image, name='intermine-solr', environment=envs, user=user, volumes=volumes,
+        network=network_name or DOCKER_NETWORK_NAME, log_match='Registered new searcher')
 
     return solr_container
 
 
-def create_postgres_container(client, image, options, env):
+def create_postgres_container(client, image, options, env, mine_name=None, network_name=None):
+    envs = {
+        'MINE_NAME': mine_name or _get_mine_name(options, env)
+    }
+
     user = _get_docker_user()
+
     data_dir = env['data_dir'] / 'data' / 'postgres'
     volumes = {
         data_dir : {
@@ -273,8 +278,8 @@ def create_postgres_container(client, image, options, env):
 
     click.echo('\n\nStarting Postgres container...\n')
     postgres_container = _start_container(
-        client, image, name='postgres', user=user, volumes=volumes,
-        network=DOCKER_NETWORK_NAME, log_match='autovacuum launcher started')
+        client, image, name='intermine-postgres', environment=envs, user=user, volumes=volumes,
+        network=network_name or DOCKER_NETWORK_NAME, log_match='PostgreSQL init process complete; ready for start up.')
 
     return postgres_container
 
@@ -288,6 +293,9 @@ def create_intermine_builder_container(client, image, options, env):
     # would also be a good idea to always print the options/environment passed
     # to intermine_builder, or at least add an option to print them
     environment = {
+        'SOLR_HOST': 'intermine-solr',
+        'TOMCAT_HOST': 'intermine-tomcat',
+        'PGHOST': 'intermine-postgres',
         'MINE_NAME': _get_mine_name(options, env),
         'MINE_REPO_URL': os.environ.get('MINE_REPO_URL', ''),
         'MEM_OPTS': os.environ.get('MEM_OPTS', '-Xmx2g -Xms1g'),
@@ -342,25 +350,25 @@ def create_intermine_builder_container(client, image, options, env):
     click.echo('\n\nStarting Intermine container...\n\n')
 
     try:
-        assert client.containers.get('postgres').status == 'running'
+        assert client.containers.get('intermine-postgres').status == 'running'
     except AssertionError:
         click.echo('Postgres container not running. Exiting...', err=True)
         exit(1)
 
     try:
-        assert client.containers.get('tomcat').status == 'running'
+        assert client.containers.get('intermine-tomcat').status == 'running'
     except AssertionError:
         click.echo('Tomcat container not running. Exiting...', err=True)
         exit(1)
 
     try:
-        assert client.containers.get('solr').status == 'running'
+        assert client.containers.get('intermine-solr').status == 'running'
     except AssertionError:
         click.echo('Solr container not running. Exiting...', err=True)
         exit(1)
 
     intermine_builder_container = _start_container(
-        client, image, name='intermine_builder', user=user, environment=environment,
+        client, image, name='intermine-builder', user=user, environment=environment,
         volumes=volumes, network=DOCKER_NETWORK_NAME)
 
     return intermine_builder_container

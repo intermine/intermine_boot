@@ -2,6 +2,7 @@ import subprocess
 import sys
 import re
 import os
+from pathlib import Path
 import click
 from xdg import (XDG_DATA_HOME)
 from intermine_boot import commands
@@ -25,6 +26,9 @@ TARGET_OPTIONS = ['local']
 @click.option('--bio-version', help='Use a specific version of InterMine\'s bio packages. Has no effect when used with `--build-im`, in which case the built version will be used.')
 @click.option('--build-images', is_flag=True, default=False, help='Build Docker images locally instead of using prebuilt images from Docker Hub.')
 @click.option('--rebuild', is_flag=True, default=False, help='Rebuild your mine from scratch even if it already exists.')
+@click.option('--data-dir', multiple=True, help="Example: --data-dir ~/mydata:/data --data-dir /malaria:/data/malaria")
+@click.option('--minecompose', type=click.Path(exists=True), help="Path to a minecompose.json file containing metadata for your mine.")
+@click.option('--preset', is_flag=True, default=False, help='Build a preset mine which allows further data sources to be added in the future.')
 def cli(**options):
     """Spin up containers for building and running an InterMine server.
 
@@ -48,8 +52,19 @@ local - Use the local docker daemon as host for the containers.
     data_dir = XDG_DATA_HOME / 'intermine_boot'
     env = {
         'data_dir': data_dir,
-        'cwd': pathlib.Path.cwd()
+        'cwd': pathlib.Path.cwd(),
+        'volumes': None
     }
+    # Unlike the above data_dir, this is when specifying additional volumes using --data-dir.
+    if options['data_dir']:
+        volumes = {}
+        for volume in options['data_dir']:
+            (k, v) = volume.split(':')
+            volumes[Path(k)] = {
+                'bind': v,
+                'mode': 'ro'
+            }
+        env['volumes'] = volumes
 
     # options and env specify the invocation state and should not be mutated!
     commands.invoke(options['mode'], options, env)
