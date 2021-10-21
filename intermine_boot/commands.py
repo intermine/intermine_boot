@@ -13,7 +13,7 @@ def start(options, env):
     assert_docker(options, env)
 
     try:
-        status = intermine_docker.up(options, env)
+        status = intermine_build.build_and_deploy(options, env)
     except:
         intermine_docker.down(options, env)
         raise
@@ -33,7 +33,7 @@ def build(options, env):
     assert_docker(options, env)
 
     try:
-        status = intermine_docker.up(options, env)
+        status = intermine_build.build(options, env)
     except:
         intermine_docker.down(options, env)
         raise
@@ -62,7 +62,10 @@ def load(options, env):
     shutil.unpack_archive(options['source'], env['data_dir'] / 'data')
 
     try:
-        status = intermine_docker.up(options, env, reuse=True)
+        if options['preset']:
+            status = intermine_build.deploy_preset(options, env)
+        else:
+            status = intermine_build.deploy(options, env)
     except:
         intermine_docker.down(options, env)
         raise
